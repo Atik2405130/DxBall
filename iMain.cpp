@@ -7,7 +7,7 @@ void iDraw()
 {
     // place your drawing codes here
     iClear();
-    iText(140, 180, "Hello World");
+    iText(140, 180, "Biday Prithibi");
 }
 
 /*
