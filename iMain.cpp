@@ -1,5 +1,75 @@
 #include "iGraphics.h"
 
+int screenWidth = 1000, screenHeight = 800;
+// Ball
+int ball_x, ball_y;
+int dx=6, dy=8;
+int ball_radius = 8;
+// Paddle
+int paddle_x, paddle_y=30;
+int paddle_width = 120,paddle_height = 15;
+
+int menuState=0; //0=Main Menu, 1=Game, 2=Instructions
+
+void ballChange(){
+    ball_x+= dx;
+    ball_y+= dy;
+    
+    if(ball_x + ball_radius > screenWidth || ball_x - ball_radius < 0)
+    {
+        if(ball_x + ball_radius > screenWidth)
+           ball_x= screenWidth - ball_radius;
+        else
+           ball_x = ball_radius;
+        dx = -dx;   
+    }
+
+    if(ball_y + ball_radius > screenHeight || ball_y - ball_radius < 0)
+    {
+        if(ball_y + ball_radius > screenHeight)
+           ball_y = screenHeight - ball_radius;
+        else
+           ball_y= ball_radius;
+        dy = -dy;
+    }
+    if(ball_y - ball_radius <= paddle_y + paddle_height && ball_x>= paddle_x && ball_x <= paddle_x + paddle_width && dy<0){
+        dy=-dy;
+        ball_y = paddle_y + paddle_height + ball_radius;// Prevent sticking        
+    }
+    if(ball_y - ball_radius < 0){
+        ball_x = paddle_x;
+        ball_y =paddle_y;
+        dx=5;
+        dy=7;
+    }
+
+}
+
+void drawmenu(){
+    iSetColor(255, 69, 0); // Orange Red
+    iTextAdvanced(270, 520, "MENU", 0.5, 3.5); // Title
+
+    iTextAdvanced(270, 420, "1. Start Game", 0.4, 2.5);
+    iTextAdvanced(270, 370, "2. Instructions", 0.4, 2.5);
+    iTextAdvanced(270, 320, "3. Exit", 0.4, 2.5);
+}
+void drawInstructions(){
+    iSetColor(255, 69, 0); //Orange Red
+    iTextAdvanced(250, 520,"Instructons",0.2,3.5);
+    iTextAdvanced(250, 420, "Use Mouse to move the paddle",0.2,3.5);
+    iTextAdvanced(250, 370,"Break all bricks without missing the ball",0.2,3.5);
+    iTextAdvanced(250, 320, "Press 'B' to go back to menu",0.2,3.5 );
+}
+void drawgame(){
+    iSetColor(255, 255, 255);
+    iFilledCircle(ball_x, ball_y, ball_radius);
+    iSetColor(255 , 0, 0);
+    iFilledRectangle(paddle_x, paddle_y, paddle_width, paddle_height);
+    iSetColor(255, 255, 255);
+    iText(10, 10, "Press p for pause, r for resume, End for exit");
+}
+
+
 /*
 function iDraw() is called again and again by the system.
 */
@@ -7,8 +77,19 @@ void iDraw()
 {
     // place your drawing codes here
     iClear();
-    iText(140, 180, "Biday Prithibi");
+    //show background image
+    if(menuState==0){
+        drawmenu();
+    }
+    else if(menuState==1){
+        drawgame();
+    }
+    else if(menuState==2){
+        drawInstructions();
+    }
+    //iText(320, 300, "Welcome to DxBall Game");
 }
+
 
 /*
 function iMouseMove() is called when the user moves the mouse.
@@ -16,6 +97,14 @@ function iMouseMove() is called when the user moves the mouse.
 */
 void iMouseMove(int mx, int my)
 {
+    if(menuState == 1){
+        paddle_x = mx-paddle_width/2;
+        if(paddle_x< 0 ) paddle_x=0;
+        if(paddle_x + paddle_width > screenWidth)
+        paddle_x = screenWidth - paddle_width;
+    }
+
+
     // place your codes here
 }
 
@@ -35,10 +124,12 @@ function iMouse() is called when the user presses/releases the mouse.
 void iMouse(int button, int state, int mx, int my)
 {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
-    {
-        // place your codes here
+    {        
+
     }
-    if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+        // place your codes here
+    
+    if(button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
     {
         // place your codes here
     }
@@ -57,18 +148,33 @@ void iMouseWheel(int dir, int mx, int my)
 function iKeyboard() is called whenever the user hits a key in keyboard.
 key- holds the ASCII value of the key pressed.
 */
-void iKeyboard(unsigned char key)
-{
-    switch (key)
-    {
-    case 'q':
-        // do something with 'q'
-        break;
-    // place your codes for other keys here
-    default:
-        break;
+void iKeyboard(unsigned char key){
+    if(menuState==0){
+        if(key=='1'){
+            menuState=1;
+            paddle_x = screenWidth/2 - paddle_width/2;
+            ball_x = paddle_x + paddle_width/2;
+            ball_y = paddle_y + paddle_height;
+            paddle_x= 350;//start Game
+        }
+        else if(key=='2'){
+            menuState=2;//Instructions
+        }
+        else if(key=='3'){
+        exit(0);//exit game
+        }
     }
-}
+        else if(menuState==2 && (key=='b'|| key=='B')){
+            menuState = 0;//Go back to main menu
+        }
+        else if(menuState==1){
+            if(key== 'p' || key== 'P') iPauseTimer(0);
+            if(key== 'r' || key== 'R') iResumeTimer(0);
+        }
+        
+        
+    }
+
 
 /*
 function iSpecialKeyboard() is called whenver user hits special keys likefunction
@@ -83,7 +189,7 @@ void iSpecialKeyboard(unsigned char key)
 {
     switch (key)
     {
-    case GLUT_KEY_END:
+    case GLUT_KEY_END:exit(0);
         // do something
         break;
     // place your codes for other keys here
@@ -93,9 +199,9 @@ void iSpecialKeyboard(unsigned char key)
 }
 
 int main(int argc, char *argv[])
-{
+{   
     glutInit(&argc, argv);
-    // place your own initialization codes here.
-    iInitialize(400, 400, "demooo");
+    iSetTimer(20, ballChange); // place your own initialization codes here.
+    iInitialize(1000, 800, "DxBall - Menu");
     return 0;
 }
