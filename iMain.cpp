@@ -1,5 +1,5 @@
 #include "iGraphics.h"
-//Nije nije code korar capability develop koro
+//ami valo chele na
 int screenWidth = 1000, screenHeight = 800;
 // Ball
 int ball_x, ball_y;
