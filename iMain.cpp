@@ -1,5 +1,5 @@
 #include "iGraphics.h"
-// Rahul is a playboy
+// Atik is a bad boy.
 int screenWidth = 1000, screenHeight = 800;
 // Ball
 int ball_x, ball_y;
