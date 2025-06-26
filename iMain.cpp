@@ -1,5 +1,6 @@
 #include "iGraphics.h"
 // Atik is a bad boy.
+// Rahul is a good boy.
 int screenWidth = 1000, screenHeight = 800;
 // Ball
 int ball_x, ball_y;
