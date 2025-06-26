@@ -202,6 +202,7 @@ void iSpecialKeyboard(unsigned char key)
 int main(int argc, char *argv[])
 {   
     glutInit(&argc, argv);
+    glutMainLoop();
     iSetTimer(20, ballChange); // place your own initialization codes here.
     iInitialize(1000, 800, "DxBall - Menu");
     return 0;
