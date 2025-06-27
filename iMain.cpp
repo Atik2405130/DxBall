@@ -274,7 +274,11 @@ void iSpecialKeyboard(unsigned char key)
 int main(int argc, char *argv[])
 {   
     glutInit(&argc, argv);
+<<<<<<< HEAD
     
+=======
+    glutMainLoop();
+>>>>>>> d395374304fe7c7744181265e362a7c5450016c4
     iSetTimer(20, ballChange); // place your own initialization codes here.
     iSetTimer(20, gameOverCountdown);
     iInitialize(1000, 800, "DxBall - With Game Over Screen");
