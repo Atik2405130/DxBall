@@ -1,5 +1,5 @@
 #include "iGraphics.h"
-// Atik is a bad boy.
+// Atik is a bad lady boy.
 // Rahul is a good boy.
 // Buet is a man of smart people.
 int screenWidth = 1000, screenHeight = 800;
