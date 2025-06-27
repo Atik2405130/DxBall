@@ -1,6 +1,4 @@
 #include "iGraphics.h"
-// Atik is a bad boy.
-// Rahul is a good boy.
 int screenWidth = 1000, screenHeight = 800;
 // Ball
 int ball_x, ball_y;
@@ -10,8 +8,10 @@ int ball_radius = 8;
 int paddle_x, paddle_y=30;
 int paddle_width = 120,paddle_height = 15;
 
-int menuState=0; //0=Main Menu, 1=Game, 2=Instructions
 
+int menuState=0; //0=Main Menu, 1=Game, 2=Instructions
+//ami khro chele
+// dihan sir is not a gentle guy
 void ballChange(){
     ball_x+= dx;
     ball_y+= dy;
@@ -202,7 +202,6 @@ void iSpecialKeyboard(unsigned char key)
 int main(int argc, char *argv[])
 {   
     glutInit(&argc, argv);
-    glutMainLoop();
     iSetTimer(20, ballChange); // place your own initialization codes here.
     iInitialize(1000, 800, "DxBall - Menu");
     return 0;
