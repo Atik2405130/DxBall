@@ -19,7 +19,7 @@ int brickheight=20;
 int bricks[ROW][COLM];
 int brickstartx=60;
 int brickstarty=600;
-
+// Rahul is bad
 int menuState=0; //0=Main Menu, 1=Game, 2=Instructions, 3=Game Over
 int gameOverTimer=0;
 
