@@ -1,4 +1,7 @@
 #include "iGraphics.h"
+// Atik is a bad boy.
+// Rahul is a good boy.
+// Buet is a man of smart people.
 int screenWidth = 1000, screenHeight = 800;
 // Ball
 int ball_x, ball_y;
@@ -7,14 +10,53 @@ int ball_radius = 8;
 // Paddle
 int paddle_x, paddle_y=30;
 int paddle_width = 120,paddle_height = 15;
+// I am a good boy
+//Bricks related
+#define ROW 5
+#define COLM 10
+int brickwidth=80;
+int brickheight=20;
+int bricks[ROW][COLM];
+int brickstartx=60;
+int brickstarty=600;
 
+int menuState=0; //0=Main Menu, 1=Game, 2=Instructions, 3=Game Over
+int gameOverTimer=0;
 
-int menuState=0; //0=Main Menu, 1=Game, 2=Instructions
-//ami khro chele
-// dihan sir is not a gentle guy
+void initBricks()
+{
+    for(int i=0;i<ROW;i++)
+    {
+        for(int j=0;j<COLM;j++)
+        {
+            bricks[i][j]=1;
+        }
+    }
+}
+
+void gameOverCountdown()
+{
+    if(gameOverTimer>0)
+    {
+        gameOverTimer--;
+        if(gameOverTimer==0)
+        {
+            menuState=0;
+        }
+    }
+}
+
 void ballChange(){
     ball_x+= dx;
     ball_y+= dy;
+
+    if(ball_y - ball_radius < 0){
+        menuState=3;
+        gameOverTimer=100;
+        ball_x=screenWidth/2;
+        ball_y=-1000;
+        return;
+    }
     
     if(ball_x + ball_radius > screenWidth || ball_x - ball_radius < 0)
     {
@@ -25,24 +67,37 @@ void ballChange(){
         dx = -dx;   
     }
 
-    if(ball_y + ball_radius > screenHeight || ball_y - ball_radius < 0)
+    //Brick collision
+    for(int i=0;i<ROW;i++)
     {
-        if(ball_y + ball_radius > screenHeight)
-           ball_y = screenHeight - ball_radius;
-        else
-           ball_y= ball_radius;
-        dy = -dy;
+        for(int j=0;j<COLM;j++)
+        {
+            if(bricks[i][j])
+            {
+                int bx=brickstartx+j*(brickwidth+10);
+                int by=brickstarty-i*(brickheight+10);
+                if(ball_x+ball_radius>bx && ball_x-ball_radius<bx+brickwidth &&
+                ball_y+ball_radius>by && ball_y-ball_radius<by+brickheight)
+                {
+                    bricks[i][j]=0;
+                    dy=-dy;
+                    break;
+                }
+            }
+        }
     }
+
+
+        if(ball_y + ball_radius > screenHeight){
+           ball_y = screenHeight - ball_radius;
+        
+        dy = -dy;}
+    
     if(ball_y - ball_radius <= paddle_y + paddle_height && ball_x>= paddle_x && ball_x <= paddle_x + paddle_width && dy<0){
         dy=-dy;
         ball_y = paddle_y + paddle_height + ball_radius;// Prevent sticking        
     }
-    if(ball_y - ball_radius < 0){
-        ball_x = paddle_x;
-        ball_y =paddle_y;
-        dx=5;
-        dy=7;
-    }
+    
 
 }
 
@@ -66,6 +121,22 @@ void drawgame(){
     iFilledCircle(ball_x, ball_y, ball_radius);
     iSetColor(255 , 0, 0);
     iFilledRectangle(paddle_x, paddle_y, paddle_width, paddle_height);
+
+    //Bricks 
+    for(int i=0;i<ROW;i++)
+    {
+        for(int j=0;j<COLM;j++)
+        {
+            if(bricks[i][j])
+            {
+                int x=brickstartx+j*(brickwidth+10);
+                int y=brickstarty-i*(brickheight+10);
+                iSetColor(0,255,255);
+                iFilledRectangle(x,y,brickwidth,brickheight);
+            }
+        }
+    }
+
     iSetColor(255, 255, 255);
     iText(10, 10, "Press p for pause, r for resume, End for exit");
 }
@@ -89,6 +160,12 @@ void iDraw()
         drawInstructions();
     }
     //iText(320, 300, "Welcome to DxBall Game");
+    else if(menuState==3)
+    {
+        iSetColor(255,0,0);
+        iTextAdvanced(320,400,"Game Over!",0.4,4.0);
+        iTextAdvanced(300,340,"Returning to Menu...",0.3,2.5);
+    }
 }
 
 
@@ -156,7 +233,10 @@ void iKeyboard(unsigned char key){
             paddle_x = screenWidth/2 - paddle_width/2;
             ball_x = paddle_x + paddle_width/2;
             ball_y = paddle_y + paddle_height;
-            paddle_x= 350;//start Game
+            //paddle_x= 350;//start Game
+            dx=6;
+            dy=8;
+            initBricks();
         }
         else if(key=='2'){
             menuState=2;//Instructions
@@ -188,21 +268,19 @@ GLUT_KEY_PAGE_UP, GLUT_KEY_PAGE_DOWN, GLUT_KEY_HOME, GLUT_KEY_END,
 GLUT_KEY_INSERT */
 void iSpecialKeyboard(unsigned char key)
 {
-    switch (key)
-    {
-    case GLUT_KEY_END:exit(0);
-        // do something
-        break;
-    // place your codes for other keys here
-    default:
-        break;
-    }
+    if(key==GLUT_KEY_END) exit(0);
 }
 
 int main(int argc, char *argv[])
 {   
     glutInit(&argc, argv);
+<<<<<<< HEAD
+    
+=======
+    glutMainLoop();
+>>>>>>> d395374304fe7c7744181265e362a7c5450016c4
     iSetTimer(20, ballChange); // place your own initialization codes here.
-    iInitialize(1000, 800, "DxBall - Menu");
+    iSetTimer(20, gameOverCountdown);
+    iInitialize(1000, 800, "DxBall - With Game Over Screen");
     return 0;
 }
