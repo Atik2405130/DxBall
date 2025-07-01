@@ -1,4 +1,5 @@
 #include "iGraphics.h"
+#include "iSound.h"
 // Atik is a bad lady boy.
 // Rahul is a good boy.
 // Buet is a man of smart people.
@@ -12,6 +13,7 @@ int ball_radius = 8;
 int paddle_x, paddle_y=30;
 int paddle_width = 120,paddle_height = 15;
 // I am a good boy
+int musicID=-1;//Menu music
 //Bricks related
 #define ROW 5
 #define COLM 10
@@ -51,6 +53,7 @@ void ballChange(){
     ball_y+= dy;
 
     if(ball_y - ball_radius < 0){
+        iPlaySound("Fall.wav",false,50);
         menuState=3;
         gameOverTimer=100;
         ball_x=screenWidth/2;
@@ -64,7 +67,8 @@ void ballChange(){
            ball_x= screenWidth - ball_radius;
         else
            ball_x = ball_radius;
-        dx = -dx;   
+        dx = -dx;
+        iPlaySound("Wall.wav",false,50); 
     }
 
     //Brick collision
@@ -81,6 +85,7 @@ void ballChange(){
                 {
                     bricks[i][j]=0;
                     dy=-dy;
+                    iPlaySound("Boop.wav",false,50);
                     break;
                 }
             }
@@ -91,11 +96,14 @@ void ballChange(){
         if(ball_y + ball_radius > screenHeight){
            ball_y = screenHeight - ball_radius;
         
-        dy = -dy;}
+        dy = -dy;
+        iPlaySound("Wall.wav",false,50);
+    }
     
     if(ball_y - ball_radius <= paddle_y + paddle_height && ball_x>= paddle_x && ball_x <= paddle_x + paddle_width && dy<0){
         dy=-dy;
-        ball_y = paddle_y + paddle_height + ball_radius;// Prevent sticking        
+        ball_y = paddle_y + paddle_height + ball_radius;// Prevent sticking
+        iPlaySound("Boing.wav",false,50);       
     }
     
 
@@ -151,9 +159,18 @@ void iDraw()
     iClear();
     //show background image
     if(menuState==0){
+        if(musicID==-1){
+            musicID=iPlaySound("bgm1.mp3", true, 50);
+        }
         drawmenu();
     }
-    else if(menuState==1){
+    else{
+        if(musicID!=-1){
+            iStopSound(musicID);
+            musicID=-1;
+        }
+    }
+    if(menuState==1){
         drawgame();
     }
     else if(menuState==2){
@@ -275,6 +292,7 @@ void iSpecialKeyboard(unsigned char key)
 int main(int argc, char *argv[])
 {   
     glutInit(&argc, argv);
+    iInitializeSound();
 
     iSetTimer(20, ballChange); // place your own initialization codes here.
     iSetTimer(20, gameOverCountdown);
