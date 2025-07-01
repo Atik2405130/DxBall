@@ -35,19 +35,18 @@ void initBricks()
     }
 }
 
-void gameOverCountdown()
-{
-    if(gameOverTimer>0)
-    {
-        gameOverTimer--;
-        if(gameOverTimer==0)
-        {
+void gameOverCountdown() {
+    if (menuState==3) {
+        if(gameOverTimer>0) {
+            gameOverTimer--;
+        } else{
             menuState=0;
         }
     }
 }
 
 void ballChange(){
+    if(menuState!=1)return;
     ball_x+= dx;
     ball_y+= dy;
 
@@ -237,6 +236,7 @@ void iKeyboard(unsigned char key){
             //paddle_x= 350;//start Game
             dx=6;
             dy=8;
+            gameOverTimer=0;
             initBricks();
         }
         else if(key=='2'){
