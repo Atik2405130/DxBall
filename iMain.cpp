@@ -26,6 +26,11 @@ int brickstarty=600;
 int menuState=0; //0=Main Menu, 1=Game, 2=Instructions, 3=Game Over
 int gameOverTimer=0;
 
+// Menu click area constants
+#define MENU_X 270
+#define MENU_WIDTH 300
+#define MENU_HEIGHT 50
+
 void initBricks()
 {
     for(int i=0;i<ROW;i++)
@@ -220,8 +225,41 @@ void iMouse(int button, int state, int mx, int my)
 {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
     {        
-
+        if(menuState==0)
+        {
+            if(mx>=MENU_X && mx<=MENU_X+MENU_WIDTH)
+            {
+                if(my >= 420 && my <= 420 + MENU_HEIGHT)
+                {// Start Game a click korle
+                    menuState = 1;
+                    paddle_x = screenWidth/2 - paddle_width/2;
+                    ball_x = paddle_x + paddle_width/2;
+                    ball_y = paddle_y + paddle_height;
+                    dx = 6;
+                    dy = 8;
+                    gameOverTimer = 0;
+                    initBricks();
+                    return;
+                }
+                else if(my>=370 && my<=370+MENU_HEIGHT){
+                    // Instructions
+                    menuState = 2;
+                    return;
+                }
+                else if(my>=320 && my<=320+MENU_HEIGHT){
+                    // Exit
+                    exit(0);
+                }
+            }
+        }
+        else if(menuState == 2){
+            // Back to menu click (around line with y=320)
+            if(mx >= 250 && mx <= 800 && my >= 320 && my <= 360){
+                menuState = 0;
+            }
+        }
     }
+    
         // place your codes here
     
     if(button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
