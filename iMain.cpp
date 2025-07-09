@@ -281,7 +281,7 @@ void iMouseWheel(int dir, int mx, int my)
 function iKeyboard() is called whenever the user hits a key in keyboard.
 key- holds the ASCII value of the key pressed.
 */
-void iKeyboard(unsigned char key){
+void iKeyboard(unsigned char key,int state){
     if(menuState==0){
         if(key=='1'){
             menuState=1;
@@ -322,7 +322,7 @@ GLUT_KEY_F7, GLUT_KEY_F8, GLUT_KEY_F9, GLUT_KEY_F10, GLUT_KEY_F11,
 GLUT_KEY_F12, GLUT_KEY_LEFT, GLUT_KEY_UP, GLUT_KEY_RIGHT, GLUT_KEY_DOWN,
 GLUT_KEY_PAGE_UP, GLUT_KEY_PAGE_DOWN, GLUT_KEY_HOME, GLUT_KEY_END,
 GLUT_KEY_INSERT */
-void iSpecialKeyboard(unsigned char key)
+void iSpecialKeyboard(unsigned char key,int state)
 {
     if(key==GLUT_KEY_END) exit(0);
 }
@@ -334,6 +334,7 @@ int main(int argc, char *argv[])
 
     iSetTimer(20, ballChange); // place your own initialization codes here.
     iSetTimer(20, gameOverCountdown);
-    iInitialize(1000, 800, "DxBall - With Game Over Screen");
+    iOpenWindow(1000, 800, "DxBall - With Game Over Screen");
     return 0;
-}
+} 
+//https://github.com/mahirlabibdihan/Modern-iGraphics/releases/tag/v0.4.0
