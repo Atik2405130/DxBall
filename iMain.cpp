@@ -13,6 +13,9 @@ int life=3;
 int musicID=-1;//Menu music
 //Bricks related
 Image img;
+Image scoreIcon;
+int score=0;
+int level=1;
 #define ROW 5
 #define COLM 10
 int brickwidth=80;
@@ -28,18 +31,67 @@ int gameOverTimer=0;
 #define MENU_X 270
 #define MENU_WIDTH 300
 #define MENU_HEIGHT 50
+void Level3Bricks(){
+    int midRow=ROW/2;
+    int midCol=COLM/2;
 
+    for (int i=0;i<ROW;i++) {
+        for (int j=0;j<COLM;j++) {
+            bricks[i][j]=0;
+        }
+    }
+
+    for (int i =0;i<ROW;i++) {
+        int dist=abs(midRow - i);
+        int left=midCol-(midCol-1-dist);
+        int right=midCol+(midCol-1-dist);
+        for (int j=left;j<=right && j<COLM;j++) {
+            if (j>=0 && (rand()%100)<75) {
+                bricks[i][j]=(rand()%2)+1;
+            }
+        }
+    }
+
+    for (int i=3;i<=7;i++){
+        for (int j=4;j<=8;j++) {
+            bricks[i][j]=(rand()%2)+1;
+        }
+    }
+}
 void initBricks()
 {
     for(int i=0;i<ROW;i++)
     {
         for(int j=0;j<COLM;j++)
         {
-            bricks[i][j]=1;
+            bricks[i][j]=0;
         }
     }
+    if(level==1) {
+        for (int i = 0; i < ROW; i++)
+            for (int j = 0; j < COLM; j++)
+                bricks[i][j] = 1;
+    }
+    else if (level==2) {
+        for (int i = 0; i < ROW; i++) {
+            for (int j = 0; j < COLM; j++) {
+                if (i+j>=2 && j-i<=7)
+                    bricks[i][j]=(rand()%2)+1;
+            }
+        }
+    }
+    else if (level == 3) {
+        Level3Bricks();
+    }
 }
-
+void drawLevelSelectMenu() {
+    iSetColor(255, 255, 255);
+    iTextAdvanced(300, 520, "Select Level", 0.5, 3.5);
+    iTextAdvanced(300, 420, "1. Level 1", 0.4, 2.5);
+    iTextAdvanced(300, 370, "2. Level 2", 0.4, 2.5);
+    iTextAdvanced(300, 320, "3. Level 3", 0.4, 2.5);
+    iTextAdvanced(300, 270, "B. Back to Main Menu", 0.3, 2.0);
+}
 void gameOverCountdown() {
     if (menuState==3) {
         if(gameOverTimer>0) {
@@ -96,7 +148,8 @@ void ballChange(){
                 if(ball_x+ball_radius>bx && ball_x-ball_radius<bx+brickwidth &&
                 ball_y+ball_radius>by && ball_y-ball_radius<by+brickheight)
                 {
-                    bricks[i][j]=0;
+                    bricks[i][j]--;
+                    if(bricks[i][j]==0) score+=10;
                     dy=-dy;
                     iPlaySound("Boop.wav",false,50);
                     break;
@@ -118,10 +171,30 @@ void ballChange(){
         ball_y = paddle_y + paddle_height + ball_radius;// Prevent sticking
         iPlaySound("Boing.wav",false,50);       
     }
-    
 
+    //Level Clear
+    bool allGone=true;
+    for(int i=0;i<ROW && allGone;i++){
+        for(int j=0;j<COLM;j++){
+            if(bricks[i][j]>0) allGone=false;
+        }
+    }
+    if(allGone){
+        level++;
+        if(level>3){
+            menuState=3;
+            gameOverTimer=1000;
+        }
+        else{
+            initBricks();
+             paddle_x = screenWidth / 2 - paddle_width / 2;
+            ball_x = paddle_x + paddle_width / 2;
+            ball_y = paddle_y + paddle_height;
+            dx = 6; dy = 8;
+
+        }
+    }
 }
-
 void drawmenu(){
     iSetColor(255, 69, 0); // Orange Red
     iTextAdvanced(270, 520, "MENU", 0.5, 3.5); // Title
@@ -144,16 +217,16 @@ void drawgame(){
     iFilledRectangle(paddle_x, paddle_y, paddle_width, paddle_height);
 
     //Bricks 
-    for(int i=0;i<ROW;i++)
-    {
-        for(int j=0;j<COLM;j++)
-        {
-            if(bricks[i][j])
-            {
-                int x=brickstartx+j*(brickwidth+10);
-                int y=brickstarty-i*(brickheight+10);
-                iSetColor(0,255,255);
-                iFilledRectangle(x,y,brickwidth,brickheight);
+    for (int i = 0; i < ROW; i++) {
+        for (int j = 0; j < COLM; j++) {
+            if (bricks[i][j] > 0) {
+                int x = brickstartx + j * (brickwidth + 10);
+                int y = brickstarty - i * (brickheight + 10);
+                if (bricks[i][j] == 2)
+                    iSetColor(255, 0, 0); // Red for dual-hit
+                else
+                    iSetColor(0, 255, 0); // Green for single-hit
+                iFilledRectangle(x, y, brickwidth, brickheight);
             }
         }
     }
@@ -161,7 +234,14 @@ void drawgame(){
     {
         iShowLoadedImage(screenWidth-40*(i+1), screenHeight-40 ,&img);
     }
-
+    iShowLoadedImage(20,screenHeight-50,&scoreIcon);
+    char scoreStr[20];
+    sprintf(scoreStr,"%d",score);
+    iSetColor(255, 255, 255);
+    iTextAdvanced(120, screenHeight - 50, scoreStr,0.2,2.5);
+    char levelstr[20];
+    sprintf(levelstr,"%d",level);
+    iTextAdvanced(screenWidth / 2 - 50, screenHeight - 40, levelstr, 0.25, 2.5);
     iSetColor(255, 255, 255);
     iText(10, 10, "Press p for pause, r for resume, End for exit");
 }
@@ -174,6 +254,7 @@ void iDraw()
 {
     // place your drawing codes here
     iClear();
+    if (menuState == 4) drawLevelSelectMenu();
     //show background image
     if(menuState==0){
         if(musicID==-1){
@@ -233,53 +314,35 @@ void iMouseDrag(int mx, int my)
 function iMouse() is called when the user presses/releases the mouse.
 (mx, my) is the position where the mouse pointer is.
 */
-void iMouse(int button, int state, int mx, int my)
-{
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
-    {        
-        if(menuState==0)
-        {
-            if(mx>=MENU_X && mx<=MENU_X+MENU_WIDTH)
-            {
-                if(my >= 420 && my <= 420 + MENU_HEIGHT)
-                {// Start Game a click korle
+void iMouse(int button,int state,int mx,int my){
+    if (button==GLUT_LEFT_BUTTON && state==GLUT_DOWN){
+        if(menuState==0) {
+            if(mx>=MENU_X && mx<=MENU_X+MENU_WIDTH && my>=420 && my<=420+MENU_HEIGHT){
+                menuState=4; // Open level selection screen
+            }
+        } else if(menuState==4){
+            if(mx>=300 && mx<=600){
+                if(my>=420 && my<=460) level=1;
+                else if (my>=370 && my<=410) level=2;
+                else if (my>=320 && my<=360) level=3;
+                else if (my>= 270 && my <= 310) {
+                    menuState=0; return;
+                }
+
+                if (level>=1 && level<=3) {
+                    score=0;
                     life=3;
-                    menuState = 1;
-                    paddle_x = screenWidth/2 - paddle_width/2;
-                    ball_x = paddle_x + paddle_width/2;
-                    ball_y = paddle_y + paddle_height;
-                    dx = 6;
-                    dy = 8;
-                    gameOverTimer = 0;
                     initBricks();
-                    return;
-                }
-                else if(my>=370 && my<=370+MENU_HEIGHT){
-                    // Instructions
-                    menuState = 2;
-                    return;
-                }
-                else if(my>=320 && my<=320+MENU_HEIGHT){
-                    // Exit
-                    exit(0);
+                    paddle_x=screenWidth / 2 - paddle_width / 2;
+                    ball_x=paddle_x+paddle_width/2;
+                    ball_y=paddle_y+paddle_height;
+                    menuState=1;
                 }
             }
         }
-        else if(menuState == 2){
-            // Back to menu click (around line with y=320)
-            if(mx >= 250 && mx <= 800 && my >= 320 && my <= 360){
-                menuState = 0;
-            }
-        }
     }
-    
-        // place your codes here
-    
-    if(button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
-    {
-        // place your codes here
-    }
-}
+}    
+
 
 /*
 function iMouseWheel() is called when the user scrolls the mouse wheel.
@@ -349,6 +412,7 @@ int main(int argc, char *argv[])
     iSetTimer(20, ballChange); // place your own initialization codes here.
     iSetTimer(20, gameOverCountdown);
     iLoadImage(&img,"life.png");
+    iLoadImage(&scoreIcon,"score.png");
     iOpenWindow(1000, 800, "DxBall - With Game Over Screen");
     return 0;
 } 
