@@ -1,10 +1,6 @@
 #include "iGraphics.h"
 #include "iSound.h"
-// Atik is a bad lady boy.
-// Rahul is a good boy.
-// Buet is a man of smart people.
 int screenWidth = 1000, screenHeight = 800;
-//ramim is notty boy
 // Ball
 int ball_x, ball_y;
 int dx=6, dy=8;
@@ -12,9 +8,11 @@ int ball_radius = 8;
 // Paddle
 int paddle_x, paddle_y=30;
 int paddle_width = 120,paddle_height = 15;
-// I am a good boy
+int lifeIcon;
+int life=3;
 int musicID=-1;//Menu music
 //Bricks related
+Image img;
 #define ROW 5
 #define COLM 10
 int brickwidth=80;
@@ -59,10 +57,20 @@ void ballChange(){
 
     if(ball_y - ball_radius < 0){
         iPlaySound("Fall.wav",false,50);
-        menuState=3;
-        gameOverTimer=100;
-        ball_x=screenWidth/2;
-        ball_y=-1000;
+        life--;
+        if(life<=0){
+            menuState=3;
+            gameOverTimer=100;
+            ball_x=screenWidth/2;
+            ball_y=-1000;
+        }
+        else{
+            paddle_x=screenWidth/2-paddle_width / 2;
+            ball_x=paddle_x+paddle_width/2;
+            ball_y=paddle_y+paddle_height;
+            dx=6;
+            dy=8;
+        }
         return;
     }
     
@@ -149,6 +157,10 @@ void drawgame(){
             }
         }
     }
+    for(int i=0;i<life;i++)
+    {
+        iShowLoadedImage(screenWidth-40*(i+1), screenHeight-40 ,&img);
+    }
 
     iSetColor(255, 255, 255);
     iText(10, 10, "Press p for pause, r for resume, End for exit");
@@ -231,6 +243,7 @@ void iMouse(int button, int state, int mx, int my)
             {
                 if(my >= 420 && my <= 420 + MENU_HEIGHT)
                 {// Start Game a click korle
+                    life=3;
                     menuState = 1;
                     paddle_x = screenWidth/2 - paddle_width/2;
                     ball_x = paddle_x + paddle_width/2;
@@ -281,9 +294,10 @@ void iMouseWheel(int dir, int mx, int my)
 function iKeyboard() is called whenever the user hits a key in keyboard.
 key- holds the ASCII value of the key pressed.
 */
-void iKeyboard(unsigned char key){
+void iKeyboard(unsigned char key, int state){
     if(menuState==0){
         if(key=='1'){
+            life=3;
             menuState=1;
             paddle_x = screenWidth/2 - paddle_width/2;
             ball_x = paddle_x + paddle_width/2;
@@ -322,7 +336,7 @@ GLUT_KEY_F7, GLUT_KEY_F8, GLUT_KEY_F9, GLUT_KEY_F10, GLUT_KEY_F11,
 GLUT_KEY_F12, GLUT_KEY_LEFT, GLUT_KEY_UP, GLUT_KEY_RIGHT, GLUT_KEY_DOWN,
 GLUT_KEY_PAGE_UP, GLUT_KEY_PAGE_DOWN, GLUT_KEY_HOME, GLUT_KEY_END,
 GLUT_KEY_INSERT */
-void iSpecialKeyboard(unsigned char key)
+void iSpecialKeyboard(unsigned char key,int state)
 {
     if(key==GLUT_KEY_END) exit(0);
 }
@@ -334,6 +348,7 @@ int main(int argc, char *argv[])
 
     iSetTimer(20, ballChange); // place your own initialization codes here.
     iSetTimer(20, gameOverCountdown);
-    iInitialize(1000, 800, "DxBall - With Game Over Screen");
+    iLoadImage(&img,"life.png");
+    iOpenWindow(1000, 800, "DxBall - With Game Over Screen");
     return 0;
 }
