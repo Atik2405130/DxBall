@@ -413,6 +413,6 @@ int main(int argc, char *argv[])
     iSetTimer(20, gameOverCountdown);
     iLoadImage(&img,"life.png");
     iLoadImage(&scoreIcon,"score.png");
-    iOpenWindow(1000, 800, "DxBall - With Game Over Screen");
+    iOpenWindow(1000, 800, "DxBall");
     return 0;
 } 
