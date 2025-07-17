@@ -294,7 +294,11 @@ void iMouseWheel(int dir, int mx, int my)
 function iKeyboard() is called whenever the user hits a key in keyboard.
 key- holds the ASCII value of the key pressed.
 */
+<<<<<<< HEAD
 void iKeyboard(unsigned char key, int state){
+=======
+void iKeyboard(unsigned char key,int state){
+>>>>>>> 8c3d388c145456cf66db0aa74d45a268a63badb2
     if(menuState==0){
         if(key=='1'){
             life=3;
@@ -348,7 +352,11 @@ int main(int argc, char *argv[])
 
     iSetTimer(20, ballChange); // place your own initialization codes here.
     iSetTimer(20, gameOverCountdown);
+<<<<<<< HEAD
     iLoadImage(&img,"life.png");
+=======
+>>>>>>> 8c3d388c145456cf66db0aa74d45a268a63badb2
     iOpenWindow(1000, 800, "DxBall - With Game Over Screen");
     return 0;
-}
+} 
+//https://github.com/mahirlabibdihan/Modern-iGraphics/releases/tag/v0.4.0
