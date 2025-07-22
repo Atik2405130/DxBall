@@ -18,6 +18,8 @@ int musicID=-1;//Menu music
 //Bricks related
 Image img;
 Image scoreIcon;
+Image level1;
+Image level2;
 int score=0;
 int level=1;
 #define ROW 5
@@ -27,7 +29,7 @@ int brickheight=20;
 int bricks[ROW][COLM];
 int brickstartx=60;
 int brickstarty=600;
-// Rahul is bad
+Image LevelSelectBackground;// Rahul is bad
 int menuState=0; //0=Main Menu, 1=Game, 2=Instructions, 3=Game Over
 int gameOverTimer=0;
 Image paddleImage;
@@ -99,12 +101,13 @@ void initBricks()
     }
 }
 void drawLevelSelectMenu() {
-    iSetColor(255, 255, 255);
-    iTextAdvanced(300, 520, "Select Level", 0.5, 3.5);
-    iTextAdvanced(300, 420, "1. Level 1", 0.4, 2.5);
-    iTextAdvanced(300, 370, "2. Level 2", 0.4, 2.5);
-    iTextAdvanced(300, 320, "3. Level 3", 0.4, 2.5);
-    iTextAdvanced(300, 270, "B. Back to Main Menu", 0.3, 2.0);
+    iShowLoadedImage(0,0,&LevelSelectBackground);
+    iSetColor(246,190,0);
+    //iTextAdvanced(300, 520, "Select Level", 0.5, 3.5);
+    //iTextAdvanced(300, 420, "1. Level 1", 0.4, 2.5);
+    //iTextAdvanced(300, 370, "2. Level 2", 0.4, 2.5);
+    //iTextAdvanced(300, 320, "3. Level 3", 0.4, 2.5);
+    iTextAdvanced(230,250,"Click to go back to Main Menu", 0.3, 2.0);
 }
 void gameOverCountdown() {
     if (menuState==3) {
@@ -252,6 +255,9 @@ void drawInstructions(){
     iTextAdvanced(250, 320, "Press 'B' to go back to menu",0.2,3.5 );
 }
 void drawgame(){
+    //if(level==1){
+        //iShowLoadedImage(0,0,&level1);// Draw at (0,0) to cover the whole screen
+    //}
     iSetColor(255, 255, 255);
     iFilledCircle(ball_x, ball_y, ball_radius);
     //iSetColor(255 , 0, 0);
@@ -338,8 +344,8 @@ void iMouseMove(int mx, int my)
     if(menuState == 1){
         paddle_x = mx-paddle_width/2;
         if(paddle_x< 0 ) paddle_x=0;
-        if(paddle_x + paddle_width > screenWidth)
-        paddle_x = screenWidth - paddle_width;
+        if(paddle_x+paddle_width>screenWidth)
+        paddle_x=screenWidth-paddle_width;
     }
 
 
@@ -361,7 +367,7 @@ function iMouse() is called when the user presses/releases the mouse.
 */
 void iMouse(int button,int state,int mx,int my){
     if (button==GLUT_LEFT_BUTTON && state==GLUT_DOWN){
-         if (menuState == 1 && ballStuck) {
+        if (menuState == 1 && ballStuck) {
             ballStuck=false;
             return;
         }
@@ -369,30 +375,46 @@ void iMouse(int button,int state,int mx,int my){
             if(mx>=MENU_X && mx<=MENU_X+MENU_WIDTH && my>=420 && my<=420+MENU_HEIGHT){
                 menuState=4; // Open level selection screen
             }
-        } else if(menuState==4){
-            if(mx>=300 && mx<=600){
-                if(my>=420 && my<=460) level=1;
-                else if (my>=370 && my<=410) level=2;
-                else if (my>=320 && my<=360) level=3;
-                else if (my>= 270 && my <= 310) {
-                    menuState=0; return;
-                }
+            else if (mx>=MENU_X && mx<=MENU_X+MENU_WIDTH && my>=370 && my<=370+MENU_HEIGHT){
+                menuState=2; // Go to Instructions screen
+            }
+        } else if(menuState==4){ // Level Select Menu clicks
+            // Coordinates based on the 'image.png' provided (estimated)
+            // You might need to adjust these precise pixel values based on your image's exact layout.
+            // Level 1: Around (345, 500) to (445, 570)
+            if(mx>=300 && mx<=400 && my>=300 && my<=400){
+                level=1;
+            }
+            // Level 2: Around (475, 500) to (575, 570)
+            else if (mx>=450 && mx<=550 && my>=300 && my<=400){
+                level=2;
+            }
+            // Level 3: Around (605, 500) to (705, 570)
+            else if (mx>=600 && mx<=705 && my>=300 && my<=400) {
+                level=3;
+            }
+            // Back to Main Menu
+            else if (mx>=230 && mx<=850 && my>=250 && my<=310){// Keep text if desired
+                menuState=0;
+                return;
+            } else { // If clicked outside level numbers, don't change level.
+                return;
+            }
 
-                if (level>=1 && level<=3) {
-                    score=0;
-                    life=3;
-                    initBricks();
-                    paddle_x=screenWidth / 2 - paddle_width / 2;
-                    ball_x=paddle_x+paddle_width/2;
-                    ball_y=paddle_y+paddle_height;
-                    menuState=1;
-                    ballStuck=true;
-                }
+            if (level>=1 && level<=3) { // If a valid level was selected
+                score=0;
+                life=3;
+                initBricks();
+                paddle_x=screenWidth / 2 - paddle_width / 2;
+                ball_x=paddle_x+paddle_width/2;
+                ball_y=paddle_y+paddle_height;
+                dx=6; dy=8; // Reset ball speed
+                menuState=1; // Go to Game Play state
+                ballStuck=true; // Ball starts stuck to paddle
             }
         }
     }
-}    
-
+} 
 
 /*
 function iMouseWheel() is called when the user scrolls the mouse wheel.
@@ -465,6 +487,8 @@ int main(int argc, char *argv[])
     iLoadImage(&img,"life.png");
     iLoadImage(&scoreIcon,"score.png");
     iLoadImage(&paddleImage,"paddle_M1.bmp");
+    iLoadImage(&LevelSelectBackground,"image.png");
+    //iLoadImage(&level1,"1.png");
     iOpenWindow(1000, 800, "DxBall");
     return 0;
 } 
