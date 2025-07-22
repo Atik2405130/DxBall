@@ -1,10 +1,14 @@
 #include "iGraphics.h"
 #include "iSound.h"
+#include<stdlib.h>
+#include<math.h>
+#include<cmath>
+#include<algorithm>
 int screenWidth = 1000, screenHeight = 800;
 // Ball
 int ball_x, ball_y;
 int dx=6, dy=8;
-int ball_radius = 8;
+int ball_radius = 7;
 // Paddle
 int paddle_x, paddle_y=30;
 int paddle_width = 120,paddle_height = 15;
@@ -26,7 +30,8 @@ int brickstarty=600;
 // Rahul is bad
 int menuState=0; //0=Main Menu, 1=Game, 2=Instructions, 3=Game Over
 int gameOverTimer=0;
-
+Image paddleImage;
+bool ballStuck=true;
 // Menu click area constants
 #define MENU_X 270
 #define MENU_WIDTH 300
@@ -72,11 +77,20 @@ void initBricks()
             for (int j = 0; j < COLM; j++)
                 bricks[i][j] = 1;
     }
-    else if (level==2) {
-        for (int i = 0; i < ROW; i++) {
-            for (int j = 0; j < COLM; j++) {
-                if (i+j>=2 && j-i<=7)
-                    bricks[i][j]=(rand()%2)+1;
+    else if(level==2){
+        for (int i=0;i<ROW;i++) {
+            for (int j=0;j<COLM;j++) {
+                if (i+j>=2 && j-i<=7) {
+                    //3 hit brick
+                    int r=rand()%100;
+                    if (r<60){
+                        bricks[i][j]=1;
+                    } else if(r<90){
+                        bricks[i][j]=2;
+                    } else {
+                        bricks[i][j]=3;
+                    }
+                }
             }
         }
     }
@@ -103,10 +117,53 @@ void gameOverCountdown() {
 }
 
 void ballChange(){
-    if(menuState!=1)return;
+    if(menuState!=1) return;
+    if (ballStuck) {
+        ball_x=paddle_x+paddle_width/2;
+        ball_y=paddle_y+paddle_height+ball_radius;
+        return;
+    }
+
+    // Predict next position (useful for advanced collision detection, but for this
+    // geometric accuracy, we'll revert if collision happens)
+    int prev_ball_x = ball_x;
+    int prev_ball_y = ball_y;
+
     ball_x+= dx;
     ball_y+= dy;
 
+    // Boundary collisions
+    if(ball_x + ball_radius > screenWidth) {
+        ball_x = screenWidth - ball_radius;
+        dx = -dx;
+        iPlaySound("Wall.wav",false,50); 
+    } else if (ball_x - ball_radius < 0) {
+        ball_x = ball_radius;
+        dx = -dx;
+        iPlaySound("Wall.wav",false,50); 
+    }
+    
+    if(ball_y + ball_radius > screenHeight){
+        ball_y=screenHeight-ball_radius;
+        dy = -dy;
+        iPlaySound("Wall.wav",false,50);
+    }
+    
+    // Paddle collision
+    if(ball_y-ball_radius<=paddle_y+paddle_height && ball_y-ball_radius>=paddle_y&&
+       ball_x>=paddle_x && ball_x<=paddle_x+paddle_width && dy<0){
+        dy=-dy;
+        double hitPos = (double)(ball_x - paddle_x) / paddle_width; // 0.0 to 1.0
+        if (hitPos<0.25) dx=-8;
+        else if(hitPos<0.5) dx=-4;//left middle
+        else if (hitPos<0.75) dx=4;//right middle
+        else dx = 8;//right quarter
+        
+        ball_y=paddle_y+paddle_height+ball_radius;// Prevent sticking
+        iPlaySound("Boing.wav",false,50);         
+    }
+
+    // Missed ball
     if(ball_y - ball_radius < 0){
         iPlaySound("Fall.wav",false,50);
         life--;
@@ -115,6 +172,7 @@ void ballChange(){
             gameOverTimer=100;
             ball_x=screenWidth/2;
             ball_y=-1000;
+            ballStuck=true;
         }
         else{
             paddle_x=screenWidth/2-paddle_width / 2;
@@ -122,76 +180,59 @@ void ballChange(){
             ball_y=paddle_y+paddle_height;
             dx=6;
             dy=8;
+            ballStuck=true;
         }
         return;
     }
-    
-    if(ball_x + ball_radius > screenWidth || ball_x - ball_radius < 0)
-    {
-        if(ball_x + ball_radius > screenWidth)
-           ball_x= screenWidth - ball_radius;
-        else
-           ball_x = ball_radius;
-        dx = -dx;
-        iPlaySound("Wall.wav",false,50); 
-    }
-
-    //Brick collision
-    for(int i=0;i<ROW;i++)
-    {
-        for(int j=0;j<COLM;j++)
-        {
-            if(bricks[i][j])
-            {
+    // Geometrically accurate Brick collision
+    for(int i=0;i<ROW;i++) {
+        for(int j=0;j<COLM;j++) {
+            if(bricks[i][j]>0) {
                 int bx=brickstartx+j*(brickwidth+10);
                 int by=brickstarty-i*(brickheight+10);
-                if(ball_x+ball_radius>bx && ball_x-ball_radius<bx+brickwidth &&
-                ball_y+ball_radius>by && ball_y-ball_radius<by+brickheight)
-                {
+                int closestX=std::max(bx,std::min(ball_x, bx + brickwidth));
+                int closestY=std::max(by,std::min(ball_y, by + brickheight));
+                int distX=ball_x-closestX;
+                int distY=ball_y-closestY;
+                double distanceSq=(distX*distX)+(distY*distY);
+                if (distanceSq<(ball_radius*ball_radius)) {
+                    ball_x=prev_ball_x;
+                    ball_y=prev_ball_y;
+                    double overlapLeft=(ball_x+ball_radius)-bx;
+                    double overlapRight=(bx+brickwidth)-(ball_x-ball_radius);
+                    double overlapBottom=(ball_y+ball_radius)-by;
+                    double overlapTop=(by+brickheight)-(ball_y-ball_radius);
+
+                    bool bouncedX=false;
+                    bool bouncedY=false;
+
+                    // Determine the minimum overlap to find the collision axis
+                    double minOverlapX = std::min(overlapLeft, overlapRight);
+                    double minOverlapY = std::min(overlapBottom, overlapTop);
+
+                    if (minOverlapX<minOverlapY){
+                        dx=-dx;
+                        bouncedX=true;
+                    } else if(minOverlapY<minOverlapX){
+                        dy=-dy;
+                        bouncedY=true;
+                    } else{
+                        dy=-dy;
+                        bouncedY=true;
+                    }
+                    
                     bricks[i][j]--;
                     if(bricks[i][j]==0) score+=10;
-                    dy=-dy;
                     iPlaySound("Boop.wav",false,50);
-                    break;
+                    
+                    // Move ball out of collision to prevent multiple hits in one frame
+                    // This is handled by ball_x/y += dx/dy after the loop,
+                    // but we ensure it's moving away from the brick.
+                    if (bouncedX) ball_x+=dx;
+                    if (bouncedY) ball_y+=dy;
+                    break; // Only hit one brick per frame
                 }
             }
-        }
-    }
-
-
-        if(ball_y + ball_radius > screenHeight){
-           ball_y = screenHeight - ball_radius;
-        
-        dy = -dy;
-        iPlaySound("Wall.wav",false,50);
-    }
-    
-    if(ball_y - ball_radius <= paddle_y + paddle_height && ball_x>= paddle_x && ball_x <= paddle_x + paddle_width && dy<0){
-        dy=-dy;
-        ball_y = paddle_y + paddle_height + ball_radius;// Prevent sticking
-        iPlaySound("Boing.wav",false,50);       
-    }
-
-    //Level Clear
-    bool allGone=true;
-    for(int i=0;i<ROW && allGone;i++){
-        for(int j=0;j<COLM;j++){
-            if(bricks[i][j]>0) allGone=false;
-        }
-    }
-    if(allGone){
-        level++;
-        if(level>3){
-            menuState=3;
-            gameOverTimer=1000;
-        }
-        else{
-            initBricks();
-             paddle_x = screenWidth / 2 - paddle_width / 2;
-            ball_x = paddle_x + paddle_width / 2;
-            ball_y = paddle_y + paddle_height;
-            dx = 6; dy = 8;
-
         }
     }
 }
@@ -213,19 +254,23 @@ void drawInstructions(){
 void drawgame(){
     iSetColor(255, 255, 255);
     iFilledCircle(ball_x, ball_y, ball_radius);
-    iSetColor(255 , 0, 0);
-    iFilledRectangle(paddle_x, paddle_y, paddle_width, paddle_height);
+    //iSetColor(255 , 0, 0);
+    //iFilledRectangle(paddle_x, paddle_y, paddle_width, paddle_height);
+    iShowLoadedImage(paddle_x, paddle_y,&paddleImage);
 
-    //Bricks 
     for (int i = 0; i < ROW; i++) {
         for (int j = 0; j < COLM; j++) {
             if (bricks[i][j] > 0) {
                 int x = brickstartx + j * (brickwidth + 10);
                 int y = brickstarty - i * (brickheight + 10);
-                if (bricks[i][j] == 2)
-                    iSetColor(255, 0, 0); // Red for dual-hit
+                //3 hit purple
+                if (bricks[i][j] == 3)
+                    iSetColor(128, 0, 128);
+                else if (bricks[i][j] == 2)//2 hit red
+                    iSetColor(255, 0, 0);
                 else
-                    iSetColor(0, 255, 0); // Green for single-hit
+                    iSetColor(0, 255, 0);//1 hit green
+                // Draw the brick
                 iFilledRectangle(x, y, brickwidth, brickheight);
             }
         }
@@ -316,6 +361,10 @@ function iMouse() is called when the user presses/releases the mouse.
 */
 void iMouse(int button,int state,int mx,int my){
     if (button==GLUT_LEFT_BUTTON && state==GLUT_DOWN){
+         if (menuState == 1 && ballStuck) {
+            ballStuck=false;
+            return;
+        }
         if(menuState==0) {
             if(mx>=MENU_X && mx<=MENU_X+MENU_WIDTH && my>=420 && my<=420+MENU_HEIGHT){
                 menuState=4; // Open level selection screen
@@ -337,6 +386,7 @@ void iMouse(int button,int state,int mx,int my){
                     ball_x=paddle_x+paddle_width/2;
                     ball_y=paddle_y+paddle_height;
                     menuState=1;
+                    ballStuck=true;
                 }
             }
         }
@@ -370,6 +420,7 @@ void iKeyboard(unsigned char key, int state){
             dy=8;
             gameOverTimer=0;
             initBricks();
+            ballStuck=true;
         }
         else if(key=='2'){
             menuState=2;//Instructions
@@ -413,6 +464,7 @@ int main(int argc, char *argv[])
     iSetTimer(20, gameOverCountdown);
     iLoadImage(&img,"life.png");
     iLoadImage(&scoreIcon,"score.png");
+    iLoadImage(&paddleImage,"paddle_M1.bmp");
     iOpenWindow(1000, 800, "DxBall");
     return 0;
 } 
