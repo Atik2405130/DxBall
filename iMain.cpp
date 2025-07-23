@@ -38,33 +38,9 @@ bool ballStuck=true;
 #define MENU_X 270
 #define MENU_WIDTH 300
 #define MENU_HEIGHT 50
-void Level3Bricks(){
-    int midRow=ROW/2;
-    int midCol=COLM/2;
 
-    for (int i=0;i<ROW;i++) {
-        for (int j=0;j<COLM;j++) {
-            bricks[i][j]=0;
-        }
-    }
 
-    for (int i =0;i<ROW;i++) {
-        int dist=abs(midRow - i);
-        int left=midCol-(midCol-1-dist);
-        int right=midCol+(midCol-1-dist);
-        for (int j=left;j<=right && j<COLM;j++) {
-            if (j>=0 && (rand()%100)<75) {
-                bricks[i][j]=(rand()%2)+1;
-            }
-        }
-    }
-
-    for (int i=3;i<=7;i++){
-        for (int j=4;j<=8;j++) {
-            bricks[i][j]=(rand()%2)+1;
-        }
-    }
-}
+ 
 void initBricks()
 {
     for(int i=0;i<ROW;i++)
