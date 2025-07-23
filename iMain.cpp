@@ -4,6 +4,8 @@
 #include<math.h>
 #include<cmath>
 #include<algorithm>
+
+// Atik is dead
 int screenWidth = 1000, screenHeight = 800;
 // Ball
 int ball_x, ball_y;
