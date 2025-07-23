@@ -4,6 +4,8 @@
 #include<math.h>
 #include<cmath>
 #include<algorithm>
+
+// Atik is dead
 int screenWidth = 1000, screenHeight = 800;
 // Ball
 int ball_x, ball_y;
@@ -38,33 +40,68 @@ bool ballStuck=true;
 #define MENU_X 270
 #define MENU_WIDTH 300
 #define MENU_HEIGHT 50
-void Level3Bricks(){
-    int midRow=ROW/2;
-    int midCol=COLM/2;
 
-    for (int i=0;i<ROW;i++) {
-        for (int j=0;j<COLM;j++) {
-            bricks[i][j]=0;
+
+
+
+void Level3Bricks() {
+    // Clear all first
+    for (int i = 0; i < ROW; i++) {
+        for (int j = 0; j < COLM; j++) {
+            bricks[i][j] = 0;
         }
     }
 
-    for (int i =0;i<ROW;i++) {
-        int dist=abs(midRow - i);
-        int left=midCol-(midCol-1-dist);
-        int right=midCol+(midCol-1-dist);
-        for (int j=left;j<=right && j<COLM;j++) {
-            if (j>=0 && (rand()%100)<75) {
-                bricks[i][j]=(rand()%2)+1;
+    // Fill all rows with bricks (upper half coverage)
+    for (int i = 0; i < ROW; i++) {
+        for (int j = 0; j < COLM; j++) {
+            int r = rand() % 100;
+
+            // Create a layered difficulty
+            if (i == 0 || i == 4 || j == 0 || j == COLM - 1) {
+                bricks[i][j] = 3; // solid outer ring
+            }
+            else if ((i + j) % 2 == 0) {
+                bricks[i][j] = (r < 50) ? 2 : 3;
+            }
+            else if ((i == 2 || i == 3) && (j >= 3 && j <= COLM - 4)) {
+                bricks[i][j] = (r < 40) ? 1 : 2;
+            }
+            else if (r < 25) {
+                bricks[i][j] = 1;
             }
         }
     }
 
-    for (int i=3;i<=7;i++){
-        for (int j=4;j<=8;j++) {
-            bricks[i][j]=(rand()%2)+1;
+    // Center explosion (super dense)
+    int cx = COLM / 2;
+    for (int i = 1; i <= 3; i++) {
+        for (int j = cx - 2; j <= cx + 2; j++) {
+            bricks[i][j] = 3;
         }
     }
+
+    // Add fang lines diagonally
+    for (int i = 0; i < ROW; i++) {
+        int j1 = i;
+        int j2 = COLM - 1 - i;
+        if (j1 >= 0 && j1 < COLM) bricks[i][j1] = 2;
+        if (j2 >= 0 && j2 < COLM) bricks[i][j2] = 2;
+    }
+
+    // Scatter some more for chaos
+    for (int k = 0; k < 10; k++) {
+        int i = rand() % ROW;
+        int j = rand() % COLM;
+        if (bricks[i][j] == 0) bricks[i][j] = (rand() % 3) + 1;
+    }
 }
+
+
+
+
+
+ 
 void initBricks()
 {
     for(int i=0;i<ROW;i++)
