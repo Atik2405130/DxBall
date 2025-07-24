@@ -5,6 +5,9 @@
 #include<cmath>
 #include<algorithm>
 
+
+bool isPaused = false;
+
 // Atik is dead
 int screenWidth = 1000, screenHeight = 800;
 // Ball
@@ -378,16 +381,14 @@ function iMouseMove() is called when the user moves the mouse.
 */
 void iMouseMove(int mx, int my)
 {
-    if(menuState == 1){
-        paddle_x = mx-paddle_width/2;
-        if(paddle_x< 0 ) paddle_x=0;
-        if(paddle_x+paddle_width>screenWidth)
-        paddle_x=screenWidth-paddle_width;
+    if(menuState == 1 && !isPaused) { //  Paddle only moves if not paused
+        paddle_x = mx - paddle_width / 2;
+        if (paddle_x < 0) paddle_x = 0;
+        if (paddle_x + paddle_width > screenWidth)
+            paddle_x = screenWidth - paddle_width;
     }
-
-
-    // place your codes here
 }
+
 
 /*
 function iMouseDrag() is called when the user presses and drags the mouse.
@@ -402,56 +403,80 @@ void iMouseDrag(int mx, int my)
 function iMouse() is called when the user presses/releases the mouse.
 (mx, my) is the position where the mouse pointer is.
 */
-void iMouse(int button,int state,int mx,int my){
-    if (button==GLUT_LEFT_BUTTON && state==GLUT_DOWN){
+void iMouse(int button, int state, int mx, int my){
+
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN){
+        // Game start on ball click
         if (menuState == 1 && ballStuck) {
-            ballStuck=false;
+            ballStuck = false;
             return;
         }
-        if(menuState==0) {
-            if(mx>=MENU_X && mx<=MENU_X+MENU_WIDTH && my>=420 && my<=420+MENU_HEIGHT){
-                menuState=4; // Open level selection screen
+
+        // Main Menu clicks
+        if(menuState == 0) {
+            // Start Game
+            if(mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 420 && my <= 420 + MENU_HEIGHT){
+                menuState = 4; // Open level selection screen
             }
-            else if (mx>=MENU_X && mx<=MENU_X+MENU_WIDTH && my>=370 && my<=370+MENU_HEIGHT){
-                menuState=2; // Go to Instructions screen
+            // Instructions
+            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 370 && my <= 370 + MENU_HEIGHT){
+                menuState = 2; // Go to Instructions screen
             }
-        } else if(menuState==4){ // Level Select Menu clicks
-            // Coordinates based on the 'image.png' provided (estimated)
-            // You might need to adjust these precise pixel values based on your image's exact layout.
-            // Level 1: Around (345, 500) to (445, 570)
-            if(mx>=300 && mx<=400 && my>=300 && my<=400){
-                level=1;
+            // Exit Button
+            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 320 && my <= 320 + MENU_HEIGHT){
+                exit(0); // Exit game
             }
-            // Level 2: Around (475, 500) to (575, 570)
-            else if (mx>=450 && mx<=550 && my>=300 && my<=400){
-                level=2;
+        }
+
+        // Level Select Menu clicks
+        else if(menuState == 4){
+            if(mx >= 300 && mx <= 400 && my >= 300 && my <= 400){
+                level = 1;
             }
-            // Level 3: Around (605, 500) to (705, 570)
-            else if (mx>=600 && mx<=705 && my>=300 && my<=400) {
-                level=3;
+            else if(mx >= 450 && mx <= 550 && my >= 300 && my <= 400){
+                level = 2;
             }
-            // Back to Main Menu
-            else if (mx>=230 && mx<=850 && my>=250 && my<=310){// Keep text if desired
-                menuState=0;
+            else if(mx >= 600 && mx <= 705 && my >= 300 && my <= 400){
+                level = 3;
+            }
+            else if(mx >= 230 && mx <= 850 && my >= 250 && my <= 310){
+                menuState = 0;
                 return;
-            } else { // If clicked outside level numbers, don't change level.
+            }
+            else {
                 return;
             }
 
-            if (level>=1 && level<=3) { // If a valid level was selected
-                score=0;
-                life=3;
+            if(level >= 1 && level <= 3){
+                score = 0;
+                life = 3;
                 initBricks();
-                paddle_x=screenWidth / 2 - paddle_width / 2;
-                ball_x=paddle_x+paddle_width/2;
-                ball_y=paddle_y+paddle_height;
-                dx=6; dy=8; // Reset ball speed
-                menuState=1; // Go to Game Play state
-                ballStuck=true; // Ball starts stuck to paddle
+                paddle_x = screenWidth / 2 - paddle_width / 2;
+                ball_x = paddle_x + paddle_width / 2;
+                ball_y = paddle_y + paddle_height;
+                dx = 6; dy = 8;
+                menuState = 1;
+                ballStuck = true;
             }
         }
     }
-} 
+
+    // ✅ Right click to pause/resume (anywhere)
+    if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN){
+        if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN){
+        if (menuState == 1) {
+            if (!isPaused) {
+                iPauseTimer(0);
+                isPaused = true;
+            } else {
+                iResumeTimer(0);
+                isPaused = false;
+            }
+        }
+    }
+}
+}
+
 
 /*
 function iMouseWheel() is called when the user scrolls the mouse wheel.
