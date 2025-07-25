@@ -9,7 +9,7 @@
 char playerName[50] = ""; // rahul new
 int nameIndex = 0;
 bool askingName = false;
-
+#define MENU_CONTINUE 7
 bool isPaused = false;
 int winTimer = 0;
 // Atik is dead
@@ -106,7 +106,7 @@ void drawNameInput()
 // atik wow
 
 
-void Level3Bricks() {
+void Level3Bricks() { // rahul new
     // Clear all first
     for (int i = 0; i < ROW; i++) {
         for (int j = 0; j < COLM; j++) {
@@ -160,12 +160,52 @@ void Level3Bricks() {
 }
 
 
-void drawLeaderboard()
-{ // rahul new
-    iShowLoadedImage(0, 0, &leaderboardImage);
+void drawLeaderboard() {
+    iShowLoadedImage(0, 0, &leaderboardImage); // Show the background image
+    iSetColor(255, 255, 255); // White text for contrast
+
+    FILE *fp = fopen("scores.txt", "r");
+    if (fp != NULL) {
+        char line[100];
+        int y = 500;
+
+        iSetColor(255, 255, 255);
+        iTextAdvanced(350, y + 40, "PLAYER", 0.3, 2.5);
+        iTextAdvanced(600, y + 40, "SCORE", 0.3, 2.5);
+
+        while (fgets(line, sizeof(line), fp) != NULL && y > 100) {
+            // Remove newline
+            line[strcspn(line, "\n")] = 0;
+
+            // Split by last space
+            char *lastSpace = strrchr(line, ' ');
+            if (lastSpace) {
+                int score = atoi(lastSpace + 1);
+                *lastSpace = '\0'; // terminate name
+
+                char *name = line;
+
+                char scoreStr[10];
+                sprintf(scoreStr, "%d", score);
+
+                iTextAdvanced(350, y, name, 0.3, 2.0);
+                iTextAdvanced(600, y, scoreStr, 0.3, 2.0);
+
+                y -= 40;
+            }
+        }
+
+        fclose(fp);
+    } else {
+        iSetColor(255, 255, 255);
+        iTextAdvanced(300, 400, "Unable to load scores.", 0.3, 2.5);
+    }
+
     iSetColor(255, 255, 255);
     iTextAdvanced(350, 50, "Press 'B' to go back", 0.25, 2.0);
 }
+
+
 
 // MARK: initBricks() -- Changed
 void initBricks();  // Declare before use
@@ -230,6 +270,42 @@ void initBricks()
     // Clear any existing falling perks when starting a new level
     fallingPerks.clear();
 }
+/*
+void saveGameState() {
+    FILE* fp = fopen("saved_game.txt", "w");
+    if (fp) {
+        fprintf(fp, "%d %d %d %d %d %d %d %d %d\n", level, score, life, ball_x, ball_y, dx, dy, paddle_x, ballStuck);
+        for (int i = 0; i < ROW; i++) {
+            for (int j = 0; j < COLM; j++) {
+                fprintf(fp, "%d ", bricks[i][j]);
+            }
+            fprintf(fp, "\n");
+        }
+        fclose(fp);
+    }
+}
+    */
+
+
+
+/*void loadGameState() {
+    FILE* fp = fopen("saved_game.txt", "r");
+    if (fp) {
+        fscanf(fp, "%d %d %d %d %d %d %d %d %d", &level, &score, &life, &ball_x, &ball_y, &dx, &dy, &paddle_x, &ballStuck);
+        for (int i = 0; i < ROW; i++) {
+            for (int j = 0; j < COLM; j++) {
+                fscanf(fp, "%d", &bricks[i][j]);
+            }
+        }
+        fclose(fp);
+        menuState = 1;
+    }
+}*/
+
+
+
+
+
 void drawLevelSelectMenu() {
     iShowLoadedImage(0,0,&LevelSelectBackground);
     iSetColor(246,190,0);
@@ -261,6 +337,7 @@ bool isLevelCleared() {
 // MARK: ballChange() -- Modified for Perk Spawning
 void ballChange(){
     if(menuState!=1 || isPaused) return; // Add pause check here
+    remove("saved_game.txt");
     if (ballStuck) {
         ball_x=paddle_x+paddle_width/2;
         ball_y=paddle_y+paddle_height+ball_radius;
@@ -522,6 +599,7 @@ void drawmenu(){
     iTextAdvanced(270, 370, "2. Instructions", 0.4, 2.5);
     iTextAdvanced(270, 320, "3. Leaderboard", 0.4, 2.5); // rahul new
     iTextAdvanced(270, 270, "4. Exit", 0.4, 2.5);
+    iTextAdvanced(270, 220, "5. Continue", 0.4, 2.5);
 }
 void drawInstructions(){
     iSetColor(255, 69, 0); //Orange Red
@@ -649,6 +727,12 @@ void iDraw()
     iTextAdvanced(screenWidth / 2 - 150, screenHeight / 2 - 50, "Get Ready for Next Level!", 0.3, 2.5);
     iTextAdvanced(screenWidth / 2 - 400, screenHeight / 2 - 100, "Click left mouse button to go to next level", 0.3, 2.5);
     }
+    else if(menuState == MENU_CONTINUE){
+    iSetColor(255, 255, 255);
+    iTextAdvanced(350, 450, "GAME PAUSED", 0.4, 3.0);
+    iTextAdvanced(350, 350, "Click to CONTINUE", 0.3, 2.5);
+    iTextAdvanced(350, 300, "Click to EXIT to Main Menu", 0.3, 2.5);
+}
 }
 void winCountdown() {
     if (menuState == MENU_WIN) {
@@ -716,6 +800,11 @@ void iMouse(int button, int state, int mx, int my){
             else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 270 && my <= 270 + MENU_HEIGHT){
                 exit(0); // Exit game
             }
+            else if(mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 220 && my <= 270){
+                loadGameState();
+                menuState = 1; // Go to game
+            }
+
         }
 
         // Level Select Menu clicks
@@ -745,17 +834,31 @@ void iMouse(int button, int state, int mx, int my){
                 return; // Wait for name input before starting game
             }
         }
+        if (menuState == MENU_CONTINUE && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+    // Continue
+    if(mx >= 350 && mx <= 650 && my >= 340 && my <= 390) {
+        iResumeTimer(0);
+        isPaused = false;
+        menuState = 1;
+    }
+    // Exit
+    else if(mx >= 350 && mx <= 650 && my >= 290 && my <= 340) {
+        saveGameState(); // Save paused game
+        menuState = 0;   // Back to main menu
+        isPaused = false;
+    }
+}
+
+
     }
 
     // ✅ Right click to pause/resume (anywhere)
     if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN){
-        if (menuState == 1) { // Only pause/resume if in game state
+        if (menuState == 1){ // Game state
             if (!isPaused) {
                 iPauseTimer(0);
                 isPaused = true;
-            } else {
-                iResumeTimer(0);
-                isPaused = false;
+                menuState = MENU_CONTINUE; // Go to pause menu
             }
         }
     }
@@ -776,6 +879,8 @@ function iKeyboard() is called whenever the user hits a key in keyboard.
 key- holds the ASCII value of the key pressed.
 */
 void iKeyboard(unsigned char key, int state){
+
+    if (state != GLUT_DOWN) return; //  Prevent duplicates
         if (askingName) { // rahul new
         if (key == '\r') { // ENTER key
             askingName = false;
