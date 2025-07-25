@@ -9,7 +9,7 @@
 char playerName[50] = ""; // rahul new
 int nameIndex = 0;
 bool askingName = false;
-
+Image menuBackground;
 bool isPaused = false;
 int winTimer = 0;
 // Atik is dead
@@ -47,8 +47,8 @@ int gameOverTimer=0;
 Image paddleImage;
 bool ballStuck=true;
 // Menu click area constants
-#define MENU_X 270
-#define MENU_WIDTH 300
+#define MENU_X 400
+#define MENU_WIDTH 600
 #define MENU_HEIGHT 50
 #define MENU_WIN 7
 
@@ -83,6 +83,7 @@ std::vector<FallingPerk> fallingPerks; // Vector to store active falling perks
 Image perkImage_Life;
 Image perkImage_Speed;
 Image perkImage_Trap;
+Image creditsImage; //Credit pic
 
 // *** NEW: Function to handle falling perks ***
 void updateFallingPerks();
@@ -513,15 +514,15 @@ void updateFallingPerks() {
     }
 }
 
-
 void drawmenu(){
-    iSetColor(255, 69, 0); // Orange Red
-    iTextAdvanced(270, 520, "MENU", 0.5, 3.5); // Title
+    iShowLoadedImage(0,0,&menuBackground);
+    //iSetColor(255, 69, 0); // Orange Red
+    //iTextAdvanced(270, 520, "MENU", 0.5, 3.5); // Title
 
-    iTextAdvanced(270, 420, "1. Start Game", 0.4, 2.5);
-    iTextAdvanced(270, 370, "2. Instructions", 0.4, 2.5);
-    iTextAdvanced(270, 320, "3. Leaderboard", 0.4, 2.5); // rahul new
-    iTextAdvanced(270, 270, "4. Exit", 0.4, 2.5);
+    //iTextAdvanced(270, 420, "1. Start Game", 0.4, 2.5);
+    //iTextAdvanced(270, 370, "2. Instructions", 0.4, 2.5);
+    //iTextAdvanced(270, 320, "3. Leaderboard", 0.4, 2.5); // rahul new
+    //iTextAdvanced(270, 270, "4. Exit", 0.4, 2.5);
 }
 void drawInstructions(){
     iSetColor(255, 69, 0); //Orange Red
@@ -619,6 +620,12 @@ void iDraw()
     if(menuState==1){
         drawgame();
     }
+    else if(menuState==10) {
+        // Draw credits screen
+        iShowLoadedImage(0, 0, &creditsImage);
+        iSetColor(135, 206, 235);
+        iTextAdvanced(200, 100, "Press 'B' to go back to Main Menu", 0.25, 3.0);
+    }
     else if(menuState==2){
         drawInstructions();
     }
@@ -701,20 +708,25 @@ void iMouse(int button, int state, int mx, int my){
         // Main Menu clicks
         if(menuState == 0) {
             // Start Game
-            if(mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 420 && my <= 420 + MENU_HEIGHT){
+            if(mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 465 && my <= 525){
                 menuState = 4; // Open level selection screen
             }
             // Instructions
-            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 370 && my <= 370 + MENU_HEIGHT){
+            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 275 && my <=350){
                 menuState = 2; // Go to Instructions screen
             }
             // Leaderboard (moved from keyboard to mouse click)
-            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 320 && my <= 320 + MENU_HEIGHT) {
+            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 375 && my <= 425) {
                 menuState = 5;
             }
             // Exit Button
-            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 270 && my <= 270 + MENU_HEIGHT){
+            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 100 && my <=150){
                 exit(0); // Exit game
+            }
+            else if(mx>=MENU_X && mx<=MENU_X+MENU_WIDTH && my>=200 && my<=250){
+                //Credits
+                menuState = 10; // Show credits screen
+                iShowLoadedImage(0, 0, &creditsImage);
             }
         }
 
@@ -829,6 +841,18 @@ void iKeyboard(unsigned char key, int state){
         {
             menuState = 0;
         }
+        else if(menuState == 10 && (key == 'b' || key == 'B')) { // Back to main menu from credits
+            menuState = 0;
+        }
+        else if(menuState==4 && (key=='b'|| key=='B')) {
+            menuState=0; // Go back to main menu
+        }
+        else if(menuState==3 && (key=='b'|| key=='B')) {
+            menuState=0; // Go back to main menu
+        }
+        else if(menuState==6 && (key=='b'|| key=='B')) {
+            startNextLevel(); // Start next level
+        }
 
     }
 
@@ -860,12 +884,14 @@ int main(int argc, char *argv[])
     iLoadImage(&paddleImage,"paddle_M1.bmp");
     iLoadImage(&LevelSelectBackground,"image.png");
     iLoadImage(&leaderboardImage, "leaderboard.jpg"); // rahul new
+    iLoadImage(&menuBackground,"Menu.jpg");
 
     // *** NEW: Load Perk Images ***
     iLoadImage(&perkImage_Life, "1.bmp"); // Assuming 1.bmp is the life perk image
     iLoadImage(&perkImage_Speed, "3.bmp"); // Assuming 3.bmp is the speed perk image
     iLoadImage(&perkImage_Trap, "13.bmp"); // Assuming 13.bmp is the trap perk image
     iLoadImage(&levelupImage, "lvlup.bmp");
+    iLoadImage(&creditsImage, "Credit.jpeg"); // Load credits image
     //iLoadImage(&level1,"1.png");
     iOpenWindow(1000, 800, "DxBall");
     return 0;
