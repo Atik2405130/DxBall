@@ -13,6 +13,7 @@ bool askingName = false;
 #define MENU_CONTINUE 7
 
 Image menuBackground;
+Image InstructionsBackground;
 
 bool isPaused = false;
 int winTimer = 0;
@@ -610,11 +611,12 @@ void drawmenu(){
 
 }
 void drawInstructions(){
-    iSetColor(255, 69, 0); //Orange Red
-    iTextAdvanced(250, 520,"Instructons",0.2,3.5);
-    iTextAdvanced(250, 420, "Use Mouse to move the paddle",0.2,3.5);
-    iTextAdvanced(250, 370,"Break all bricks without missing the ball",0.2,3.5);
-    iTextAdvanced(250, 320, "Press 'B' to go back to menu",0.2,3.5 );
+    iShowLoadedImage(0, 0, &InstructionsBackground);
+    //iSetColor(255, 69, 0); //Orange Red
+    //iTextAdvanced(250, 520,"Instructons",0.2,3.5);
+    //iTextAdvanced(250, 420, "Use Mouse to move the paddle",0.2,3.5);
+    //iTextAdvanced(250, 370,"Break all bricks without missing the ball",0.2,3.5);
+    //iTextAdvanced(250, 320, "Press 'B' to go back to menu",0.2,3.5 );
 }
 // MARK: drawgame() -- Modified to draw falling perks
 void drawgame(){
@@ -986,6 +988,7 @@ int main(int argc, char *argv[])
     iLoadImage(&levelupImage, "lvlup.bmp");
     iLoadImage(&creditsImage, "Credit.jpeg"); // Load credits image
     //iLoadImage(&level1,"1.png");
+    iLoadImage(&InstructionsBackground, "Instructions.jpeg");
     iOpenWindow(1000, 800, "DxBall");
     return 0;
 }
