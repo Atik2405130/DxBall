@@ -15,7 +15,7 @@ bool askingName = false;
 Image menuBackground;
 Image InstructionsBackground;
 
-bool isPaused = false;
+bool isPaused=false; // Pause state
 int winTimer = 0;
 // Atik is dead
 int screenWidth = 1000, screenHeight = 800;
@@ -55,7 +55,7 @@ bool ballStuck=true;
 #define MENU_X 400
 #define MENU_WIDTH 600
 #define MENU_HEIGHT 50
-#define MENU_WIN 7
+#define MENU_WIN 8
 
 // *** NEW: Perk Definitions ***
 #define BRICK_TYPE_NORMAL_1HIT 1 // Green
@@ -64,6 +64,11 @@ bool ballStuck=true;
 
 // Special brick type that spawns a perk when destroyed
 #define BRICK_TYPE_SPAWN_PERK 7
+#define PAUSE_BUTTON_X (screenWidth / 2 - 100)
+#define PAUSE_BUTTON_WIDTH 200
+#define PAUSE_BUTTON_HEIGHT 50
+#define RESUME_BUTTON_Y (screenHeight / 2 + 30)
+#define EXIT_BUTTON_Y (screenHeight / 2 - 40)
 
 // Perk types for falling objects
 enum PerkType {
@@ -618,6 +623,26 @@ void drawInstructions(){
     //iTextAdvanced(250, 370,"Break all bricks without missing the ball",0.2,3.5);
     //iTextAdvanced(250, 320, "Press 'B' to go back to menu",0.2,3.5 );
 }
+void drawPauseMenu() {
+    iSetColor(0, 0, 0); // Semi-transparent black background
+    iFilledRectangle(0, 0, screenWidth, screenHeight);
+
+    iSetColor(255, 255, 255);
+    iTextAdvanced(screenWidth / 2 - 100, screenHeight / 2 + 100, "PAUSED", 0.5, 3.0);
+
+    // Resume Button
+    iSetColor(0, 200, 0); // Green button
+    iFilledRectangle(PAUSE_BUTTON_X, RESUME_BUTTON_Y, PAUSE_BUTTON_WIDTH, PAUSE_BUTTON_HEIGHT);
+    iSetColor(255, 255, 255);
+    iTextAdvanced(PAUSE_BUTTON_X + 50, RESUME_BUTTON_Y + 15, "RESUME", 0.3, 2.0);
+
+    // Exit to Menu Button
+    iSetColor(200, 0, 0); // Red button
+    iFilledRectangle(PAUSE_BUTTON_X, EXIT_BUTTON_Y, PAUSE_BUTTON_WIDTH, PAUSE_BUTTON_HEIGHT);
+    iSetColor(255, 255, 255);
+    iTextAdvanced(PAUSE_BUTTON_X + 20, EXIT_BUTTON_Y + 15, "EXIT TO MENU", 0.3, 2.0);
+}
+
 // MARK: drawgame() -- Modified to draw falling perks
 void drawgame(){
     //if(level==1){
@@ -743,12 +768,15 @@ void iDraw()
     iTextAdvanced(screenWidth / 2 - 150, screenHeight / 2 - 50, "Get Ready for Next Level!", 0.3, 2.5);
     iTextAdvanced(screenWidth / 2 - 400, screenHeight / 2 - 100, "Click left mouse button to go to next level", 0.3, 2.5);
     }
+    else if(menuState == 7) { // New state: Game Paused
+    drawPauseMenu();
+    }
     else if(menuState == MENU_CONTINUE){
     iSetColor(255, 255, 255);
     iTextAdvanced(350, 450, "GAME PAUSED", 0.4, 3.0);
     iTextAdvanced(350, 350, "Click to CONTINUE", 0.3, 2.5);
     iTextAdvanced(350, 300, "Click to EXIT to Main Menu", 0.3, 2.5);
-}
+    }
 }
 void winCountdown() {
     if (menuState == MENU_WIN) {
@@ -850,18 +878,45 @@ void iMouse(int button, int state, int mx, int my){
                 return; // Wait for name input before starting game
             }
         }
+        else if (menuState == 7) { // If in pause menu
+            // Check Resume button click
+            if (mx >= PAUSE_BUTTON_X && mx <= PAUSE_BUTTON_X + PAUSE_BUTTON_WIDTH &&
+                my >= RESUME_BUTTON_Y && my <= RESUME_BUTTON_Y + PAUSE_BUTTON_HEIGHT) {
+                menuState = 1; // Go back to game
+                iResumeTimer(0); // Resume game timer
+                isPaused = false; // Unpause the game
+            }
+            // Check Exit to Menu button click
+            else if (mx >= PAUSE_BUTTON_X && mx <= PAUSE_BUTTON_X + PAUSE_BUTTON_WIDTH &&
+                     my >= EXIT_BUTTON_Y && my <= EXIT_BUTTON_Y + PAUSE_BUTTON_HEIGHT) {
+                menuState = 0; // Go back to main menu
+                iPauseTimer(0); // Stop game timer
+                isPaused = false; // Ensure unpaused
+                // Reset game state for a fresh start when returning to menu
+                life = 3;
+                score = 0;
+                level = 1;
+                ball_x = screenWidth / 2;
+                ball_y = paddle_y + paddle_height + ball_radius;
+                dx = 6; dy = 8;
+                ballStuck = true;
+                fallingPerks.clear(); // Clear any falling perks
+                initBricks(); // Re-initialize bricks for level 1
+            }
+        }
     }
 
-    // ✅ Right click to pause/resume (anywhere)
     if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN){
-        if (menuState == 1) { // Only pause/resume if in game state
-            if (!isPaused) {
-                iPauseTimer(0);
-                isPaused = true;
-            } else {
-                iResumeTimer(0);
-                isPaused = false;
-            }
+    // Only toggle pause if in game state and not level complete
+        if (menuState == 1 && !isPaused) {
+        iPauseTimer(0);
+        isPaused = true;
+        menuState = 7;
+    }
+    else if (menuState == 7 && isPaused) {
+        iResumeTimer(0);
+        isPaused = false;
+        menuState = 1;
         }
     }
 }
