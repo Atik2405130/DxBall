@@ -27,6 +27,7 @@ Image level1;
 Image level2;
 int score=0;
 int level=1;
+int level1MusicID=-1;
 #define ROW 5
 #define COLM 10
 int brickwidth=80;
@@ -179,17 +180,17 @@ void ballChange(){
     if(ball_x + ball_radius > screenWidth) {
         ball_x = screenWidth - ball_radius;
         dx = -dx;
-        iPlaySound("Wall.wav",false,50); 
+        iPlaySound("Wall.wav",false,10); 
     } else if (ball_x - ball_radius < 0) {
         ball_x = ball_radius;
         dx = -dx;
-        iPlaySound("Wall.wav",false,50); 
+        iPlaySound("Wall.wav",false,10); 
     }
     
     if(ball_y + ball_radius > screenHeight){
         ball_y=screenHeight-ball_radius;
         dy = -dy;
-        iPlaySound("Wall.wav",false,50);
+        iPlaySound("Wall.wav",false,10);
     }
     
     // Paddle collision
@@ -203,12 +204,12 @@ void ballChange(){
         else dx = 8;//right quarter
         
         ball_y=paddle_y+paddle_height+ball_radius;// Prevent sticking
-        iPlaySound("Boing.wav",false,50);         
+        iPlaySound("Boing.wav",false,10);         
     }
 
     // Missed ball
     if(ball_y - ball_radius < 0){
-        iPlaySound("Fall.wav",false,50);
+        iPlaySound("Fall.wav",false,10);
         life--;
         if(life<=0){
             menuState=3;
@@ -266,7 +267,7 @@ void ballChange(){
                     
                     bricks[i][j]--;
                     if(bricks[i][j]==0) score+=10;
-                    iPlaySound("Boop.wav",false,50);
+                    iPlaySound("Boop.wav",false,10);
                     
                     // Move ball out of collision to prevent multiple hits in one frame
                     // This is handled by ball_x/y += dx/dy after the loop,
@@ -360,8 +361,8 @@ void iDraw()
         }
     }
     if(menuState==1){
-        drawgame();
-    }
+    drawgame();
+  }
     else if(menuState==2){
         drawInstructions();
     }
@@ -374,14 +375,13 @@ void iDraw()
     }
 }
 
-
 /*
 function iMouseMove() is called when the user moves the mouse.
 (mx, my) is the position where the mouse pointer is.
 */
 void iMouseMove(int mx, int my)
 {
-    if(menuState == 1 && !isPaused) { //  Paddle only moves if not paused
+    if(menuState == 1 && !isPaused) { //Paddle only moves if not paused
         paddle_x = mx - paddle_width / 2;
         if (paddle_x < 0) paddle_x = 0;
         if (paddle_x + paddle_width > screenWidth)
