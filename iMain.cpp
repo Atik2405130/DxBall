@@ -4,14 +4,14 @@
 #include<math.h>
 #include<cmath>
 #include<algorithm>
+#include <vector> // Required for std::vector
 
 char playerName[50] = ""; // rahul new
 int nameIndex = 0;
 bool askingName = false;
 
-
 bool isPaused = false;
-
+int winTimer = 0;
 // Atik is dead
 int screenWidth = 1000, screenHeight = 800;
 // Ball
@@ -29,6 +29,7 @@ Image img;
 Image scoreIcon;
 Image level1;
 Image level2;
+Image levelupImage;
 int score=0;
 int level=1;
 int level1MusicID=-1;
@@ -49,7 +50,42 @@ bool ballStuck=true;
 #define MENU_X 270
 #define MENU_WIDTH 300
 #define MENU_HEIGHT 50
+#define MENU_WIN 7
 
+// *** NEW: Perk Definitions ***
+#define BRICK_TYPE_NORMAL_1HIT 1 // Green
+#define BRICK_TYPE_NORMAL_2HIT 2 // Red
+#define BRICK_TYPE_NORMAL_3HIT 3 // Purple
+
+// Special brick type that spawns a perk when destroyed
+#define BRICK_TYPE_SPAWN_PERK 7
+
+// Perk types for falling objects
+enum PerkType {
+    PERK_LIFE_UP = 0, // 1.bmp
+    PERK_BALL_SPEED_UP, // 3.bmp
+    PERK_LIFE_DOWN_RESET // 13.bmp
+};
+
+// Structure for a falling perk object
+struct FallingPerk {
+    int x, y;
+    PerkType type;
+    int speed;
+    bool active;
+    Image perkImage; // Holds the image for this specific perk
+    int width, height; // Size of the falling perk image
+};
+
+std::vector<FallingPerk> fallingPerks; // Vector to store active falling perks
+
+// *** NEW: Perk Images ***
+Image perkImage_Life;
+Image perkImage_Speed;
+Image perkImage_Trap;
+
+// *** NEW: Function to handle falling perks ***
+void updateFallingPerks();
 
 void drawNameInput()
 { // rahul new
@@ -85,16 +121,16 @@ void Level3Bricks() {
 
             // Create a layered difficulty
             if (i == 0 || i == 4 || j == 0 || j == COLM - 1) {
-                bricks[i][j] = 3; // solid outer ring
+                bricks[i][j] = BRICK_TYPE_NORMAL_3HIT; // solid outer ring
             }
             else if ((i + j) % 2 == 0) {
-                bricks[i][j] = (r < 50) ? 2 : 3;
+                bricks[i][j] = (r < 50) ? BRICK_TYPE_NORMAL_2HIT : BRICK_TYPE_NORMAL_3HIT;
             }
             else if ((i == 2 || i == 3) && (j >= 3 && j <= COLM - 4)) {
-                bricks[i][j] = (r < 40) ? 1 : 2;
+                bricks[i][j] = (r < 40) ? BRICK_TYPE_NORMAL_1HIT : BRICK_TYPE_NORMAL_2HIT;
             }
             else if (r < 25) {
-                bricks[i][j] = 1;
+                bricks[i][j] = BRICK_TYPE_NORMAL_1HIT;
             }
         }
     }
@@ -103,7 +139,7 @@ void Level3Bricks() {
     int cx = COLM / 2;
     for (int i = 1; i <= 3; i++) {
         for (int j = cx - 2; j <= cx + 2; j++) {
-            bricks[i][j] = 3;
+            bricks[i][j] = BRICK_TYPE_NORMAL_3HIT;
         }
     }
 
@@ -111,8 +147,8 @@ void Level3Bricks() {
     for (int i = 0; i < ROW; i++) {
         int j1 = i;
         int j2 = COLM - 1 - i;
-        if (j1 >= 0 && j1 < COLM) bricks[i][j1] = 2;
-        if (j2 >= 0 && j2 < COLM) bricks[i][j2] = 2;
+        if (j1 >= 0 && j1 < COLM) bricks[i][j1] = BRICK_TYPE_NORMAL_2HIT;
+        if (j2 >= 0 && j2 < COLM) bricks[i][j2] = BRICK_TYPE_NORMAL_2HIT;
     }
 
     // Scatter some more for chaos
@@ -125,14 +161,26 @@ void Level3Bricks() {
 
 
 void drawLeaderboard()
-{ // rahul new 
+{ // rahul new
     iShowLoadedImage(0, 0, &leaderboardImage);
     iSetColor(255, 255, 255);
     iTextAdvanced(350, 50, "Press 'B' to go back", 0.25, 2.0);
 }
 
+// MARK: initBricks() -- Changed
+void initBricks();  // Declare before use
+void startNextLevel() {
+    if (level > 3) level = 3; // Safety check
+    menuState = 1;
+    initBricks();
+    paddle_x = screenWidth / 2 - paddle_width / 2;
+    ball_x = paddle_x + paddle_width / 2;
+    ball_y = paddle_y + paddle_height;
+    dx = 6;
+    dy = 8;
+    ballStuck = true;
+}
 
- 
 void initBricks()
 {
     for(int i=0;i<ROW;i++)
@@ -145,20 +193,19 @@ void initBricks()
     if(level==1) {
         for (int i = 0; i < ROW; i++)
             for (int j = 0; j < COLM; j++)
-                bricks[i][j] = 1;
+                bricks[i][j] = BRICK_TYPE_NORMAL_1HIT; // Use defined constants
     }
     else if(level==2){
         for (int i=0;i<ROW;i++) {
             for (int j=0;j<COLM;j++) {
                 if (i+j>=2 && j-i<=7) {
-                    //3 hit brick
                     int r=rand()%100;
                     if (r<60){
-                        bricks[i][j]=1;
+                        bricks[i][j]=BRICK_TYPE_NORMAL_1HIT;
                     } else if(r<90){
-                        bricks[i][j]=2;
+                        bricks[i][j]=BRICK_TYPE_NORMAL_2HIT;
                     } else {
-                        bricks[i][j]=3;
+                        bricks[i][j]=BRICK_TYPE_NORMAL_3HIT;
                     }
                 }
             }
@@ -167,6 +214,21 @@ void initBricks()
     else if (level == 3) {
         Level3Bricks();
     }
+
+    // Add perks to 6-7 random bricks in all levels
+    int perksAdded = 0;
+    int numPerks = 6 + (rand() % 2); // 6 or 7 perks
+    while(perksAdded < numPerks) {
+        int r = rand() % ROW;
+        int c = rand() % COLM;
+        // Ensure it's a valid brick and not already a perk-spawning brick
+        if(bricks[r][c] > 0 && bricks[r][c] != BRICK_TYPE_SPAWN_PERK) {
+            bricks[r][c] = BRICK_TYPE_SPAWN_PERK; // This brick will spawn a perk
+            perksAdded++;
+        }
+    }
+    // Clear any existing falling perks when starting a new level
+    fallingPerks.clear();
 }
 void drawLevelSelectMenu() {
     iShowLoadedImage(0,0,&LevelSelectBackground);
@@ -186,9 +248,19 @@ void gameOverCountdown() {
         }
     }
 }
+bool isLevelCleared() {
+    for (int i = 0; i < ROW; i++) {
+        for (int j = 0; j < COLM; j++) {
+            if (bricks[i][j] > 0) return false;
+        }
+    }
+    return true;
+}
 
+
+// MARK: ballChange() -- Modified for Perk Spawning
 void ballChange(){
-    if(menuState!=1) return;
+    if(menuState!=1 || isPaused) return; // Add pause check here
     if (ballStuck) {
         ball_x=paddle_x+paddle_width/2;
         ball_y=paddle_y+paddle_height+ball_radius;
@@ -207,19 +279,19 @@ void ballChange(){
     if(ball_x + ball_radius > screenWidth) {
         ball_x = screenWidth - ball_radius;
         dx = -dx;
-        iPlaySound("Wall.wav",false,10); 
+        iPlaySound("Wall.wav",false,10);
     } else if (ball_x - ball_radius < 0) {
         ball_x = ball_radius;
         dx = -dx;
-        iPlaySound("Wall.wav",false,10); 
+        iPlaySound("Wall.wav",false,10);
     }
-    
+
     if(ball_y + ball_radius > screenHeight){
         ball_y=screenHeight-ball_radius;
         dy = -dy;
         iPlaySound("Wall.wav",false,10);
     }
-    
+
     // Paddle collision
     if(ball_y-ball_radius<=paddle_y+paddle_height && ball_y-ball_radius>=paddle_y&&
        ball_x>=paddle_x && ball_x<=paddle_x+paddle_width && dy<0){
@@ -229,9 +301,9 @@ void ballChange(){
         else if(hitPos<0.5) dx=-4;//left middle
         else if (hitPos<0.75) dx=4;//right middle
         else dx = 8;//right quarter
-        
+
         ball_y=paddle_y+paddle_height+ball_radius;// Prevent sticking
-        iPlaySound("Boing.wav",false,10);         
+        iPlaySound("Boing.wav",false,10);
     }
 
     // Missed ball
@@ -298,11 +370,37 @@ void ballChange(){
                         dy=-dy;
                         bouncedY=true;
                     }
-                    
-                    bricks[i][j]--;
-                    if(bricks[i][j]==0) score+=10;
+
+                    if (bricks[i][j] == BRICK_TYPE_SPAWN_PERK) {
+                        // Spawn a new falling perk object
+                        FallingPerk newPerk;
+                        newPerk.x = bx + brickwidth / 2; // Center of the broken brick
+                        newPerk.y = by; // Just below the broken brick
+                        newPerk.speed = 3 + (rand() % 3); // Random speed for falling perks
+                        newPerk.active = true;
+                        newPerk.width = 30; // Example size, adjust as needed
+                        newPerk.height = 30; // Example size, adjust as needed
+
+                        int perkChoice = rand() % 3; // 0, 1, or 2
+                        if (perkChoice == 0) {
+                            newPerk.type = PERK_LIFE_UP;
+                            newPerk.perkImage = perkImage_Life;
+                        } else if (perkChoice == 1) {
+                            newPerk.type = PERK_BALL_SPEED_UP;
+                            newPerk.perkImage = perkImage_Speed;
+                        } else {
+                            newPerk.type = PERK_LIFE_DOWN_RESET;
+                            newPerk.perkImage = perkImage_Trap;
+                        }
+                        fallingPerks.push_back(newPerk);
+                        bricks[i][j] = 0; // Destroy the brick
+                        score += 10;
+                    } else {
+                        bricks[i][j]--;
+                        if(bricks[i][j]==0) score+=10;
+                    }
                     iPlaySound("Boop.wav",false,10);
-                    
+
                     // Move ball out of collision to prevent multiple hits in one frame
                     // This is handled by ball_x/y += dx/dy after the loop,
                     // but we ensure it's moving away from the brick.
@@ -313,7 +411,109 @@ void ballChange(){
             }
         }
     }
+    // Check if level is cleared
+if (isLevelCleared()) {
+    ballStuck = true;
+    if (level < 3) {
+        level++;
+        menuState = 6; // Show "Level Complete!" screen
+        //iResumeTimer(0); // Ensure timers are running
+        //initBricks();
+        //paddle_x = screenWidth / 2 - paddle_width / 2;
+        //ball_x = paddle_x + paddle_width / 2;
+        //ball_y = paddle_y + paddle_height;
+        //dx = 6;
+        //dy = 8;
+        ballStuck = true;
+    } else {
+        // All levels done, show win screen
+        menuState = MENU_WIN;
+        winTimer = 150; // ~3 seconds at 20ms per frame
+        ball_x = screenWidth / 2;
+        ball_y = -1000;
+        ballStuck = true;
+
+        // Save final score
+        FILE *fp = fopen("scores.txt", "a");
+        if (fp != NULL) {
+            fprintf(fp, "%s %d\n", playerName[0] ? playerName : "Anonymous", score);
+            fclose(fp);
+        }
+    }
+  }
 }
+
+// MARK: New Function: updateFallingPerks()
+void updateFallingPerks() {
+    if (menuState != 1 || isPaused) return; // Only update if game is active and not paused
+
+    for (size_t i = 0; i < fallingPerks.size(); ) {
+        if (!fallingPerks[i].active) {
+            // Remove inactive perks
+            fallingPerks.erase(fallingPerks.begin() + i);
+            continue;
+        }
+
+        fallingPerks[i].y -= fallingPerks[i].speed; // Move perk downwards
+
+        // Check for collision with paddle
+        if (fallingPerks[i].y <= paddle_y + paddle_height &&
+            fallingPerks[i].y + fallingPerks[i].height >= paddle_y &&
+            fallingPerks[i].x + fallingPerks[i].width >= paddle_x &&
+            fallingPerks[i].x <= paddle_x + paddle_width) {
+
+            // Paddle hit the perk! Apply effect.
+            if (fallingPerks[i].type == PERK_LIFE_UP) {
+                life++;
+                iPlaySound("Boop.wav", false, 50); // Good perk sound
+            } else if (fallingPerks[i].type == PERK_BALL_SPEED_UP) {
+                dx = (dx > 0) ? dx + 2 : dx - 2;
+                dy = (dy > 0) ? dy + 2 : dy - 2;
+                // Cap speed to prevent it from becoming too fast
+                if (abs(dx) > 15) dx = (dx > 0) ? 15 : -15;
+                if (abs(dy) > 15) dy = (dy > 0) ? 15 : -15;
+                iPlaySound("Boop.wav", false, 50); // Good perk sound
+            } else if (fallingPerks[i].type == PERK_LIFE_DOWN_RESET) {
+                life--;
+                iPlaySound("Fall.wav", false, 50); // Trap perk sound
+                if (life <= 0) {
+                    menuState = 3; // Game Over
+                    gameOverTimer = 100;
+                    ball_x = screenWidth / 2;
+                    ball_y = -1000;
+                    ballStuck = true;
+
+                    FILE *fp = fopen("scores.txt", "a");
+                    if (fp != NULL)
+                    { // rahul new
+                        fprintf(fp, "%s %d\n", playerName[0] ? playerName : "Anonymous", score);
+                        fclose(fp);
+                    }
+                } else {
+                    // Reset ball to paddle
+                    paddle_x = screenWidth / 2 - paddle_width / 2;
+                    ball_x = paddle_x + paddle_width / 2;
+                    ball_y = paddle_y + paddle_height;
+                    dx = 6; // Reset ball speed to default
+                    dy = 8;
+                    ballStuck = true;
+                }
+            }
+            fallingPerks[i].active = false; // Deactivate the perk
+            // Do NOT increment 'i' as erase() shifts elements
+        }
+        // Check if perk has fallen off screen
+        else if (fallingPerks[i].y + fallingPerks[i].height < 0) {
+            fallingPerks[i].active = false; // Deactivate
+            // Do NOT increment 'i' as erase() shifts elements
+        }
+        else {
+            i++; // Only increment if no element was removed
+        }
+    }
+}
+
+
 void drawmenu(){
     iSetColor(255, 69, 0); // Orange Red
     iTextAdvanced(270, 520, "MENU", 0.5, 3.5); // Title
@@ -330,6 +530,7 @@ void drawInstructions(){
     iTextAdvanced(250, 370,"Break all bricks without missing the ball",0.2,3.5);
     iTextAdvanced(250, 320, "Press 'B' to go back to menu",0.2,3.5 );
 }
+// MARK: drawgame() -- Modified to draw falling perks
 void drawgame(){
     //if(level==1){
         //iShowLoadedImage(0,0,&level1);// Draw at (0,0) to cover the whole screen
@@ -345,18 +546,31 @@ void drawgame(){
             if (bricks[i][j] > 0) {
                 int x = brickstartx + j * (brickwidth + 10);
                 int y = brickstarty - i * (brickheight + 10);
-                //3 hit purple
-                if (bricks[i][j] == 3)
+
+                // Color for normal bricks based on hits left
+                if (bricks[i][j] == BRICK_TYPE_NORMAL_3HIT) // 3-hit purple
                     iSetColor(128, 0, 128);
-                else if (bricks[i][j] == 2)//2 hit red
+                else if (bricks[i][j] == BRICK_TYPE_NORMAL_2HIT)//2 hit red
                     iSetColor(255, 0, 0);
-                else
-                    iSetColor(0, 255, 0);//1 hit green
+                else if (bricks[i][j] == BRICK_TYPE_NORMAL_1HIT) //1 hit green
+                    iSetColor(0, 255, 0);
+                else if (bricks[i][j] == BRICK_TYPE_SPAWN_PERK) // Perk spawning brick: Distinct color (e.g., Orange)
+                    iSetColor(255, 165, 0);
+
                 // Draw the brick
                 iFilledRectangle(x, y, brickwidth, brickheight);
             }
         }
     }
+
+    // Draw falling perks
+    for (auto& perk : fallingPerks) {
+        if (perk.active) {
+            iShowLoadedImage(perk.x - perk.width/2, perk.y, &perk.perkImage); // Draw centered horizontally
+        }
+    }
+
+
     for(int i=0;i<life;i++)
     {
         iShowLoadedImage(screenWidth-40*(i+1), screenHeight-40 ,&img);
@@ -370,7 +584,7 @@ void drawgame(){
     sprintf(levelstr,"%d",level);
     iTextAdvanced(screenWidth / 2 - 50, screenHeight - 40, levelstr, 0.25, 2.5);
     iSetColor(255, 255, 255);
-    iText(10, 10, "Press p for pause, r for resume, End for exit");
+    iText(10, 10, "Press right mouse button for pause & resume, End for exit");
 }
 
 
@@ -403,8 +617,8 @@ void iDraw()
         }
     }
     if(menuState==1){
-    drawgame();
-  }
+        drawgame();
+    }
     else if(menuState==2){
         drawInstructions();
     }
@@ -415,11 +629,34 @@ void iDraw()
         iTextAdvanced(320,400,"Game Over!",0.4,4.0);
         iTextAdvanced(300,340,"Returning to Menu...",0.3,2.5);
     }
+    else if(menuState == MENU_WIN) {
+    iSetColor(0, 255, 0);
+    iTextAdvanced(300, 400, "🎉 Congratulations!", 0.5, 4.0);
+    iTextAdvanced(250, 330, "You have completed all levels!", 0.4, 3.0);
+    iTextAdvanced(250, 260, "Returning to Main Menu...", 0.3, 2.5);
+}
+
     else if(menuState == 5) // rahul new
     {
     drawLeaderboard();
     }
+    else if(menuState == 6) { // New state: Level Up screen
+    //iShowLoadedImage(0, 0, &levelupImage); // Draw level up image full screen
+    iSetColor(255, 255, 255);
+    char levelText[50];
+    sprintf(levelText, "Level %d Complete!", level - 1); // Display the level just completed
+    iTextAdvanced(screenWidth / 2 - 150, screenHeight / 2 + 50, levelText, 0.4, 3.0);
+    iTextAdvanced(screenWidth / 2 - 150, screenHeight / 2 - 50, "Get Ready for Next Level!", 0.3, 2.5);
+    iTextAdvanced(screenWidth / 2 - 400, screenHeight / 2 - 100, "Click left mouse button to go to next level", 0.3, 2.5);
+    }
 }
+void winCountdown() {
+    if (menuState == MENU_WIN) {
+        if (winTimer > 0) winTimer--;
+        else menuState = 0; // Return to main menu
+    }
+}
+
 
 /*
 function iMouseMove() is called when the user moves the mouse.
@@ -452,12 +689,15 @@ function iMouse() is called when the user presses/releases the mouse.
 void iMouse(int button, int state, int mx, int my){
 
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN){
+        if (menuState == 6) {
+        startNextLevel();
+        return;
+        }
         // Game start on ball click
         if (menuState == 1 && ballStuck) {
             ballStuck = false;
             return;
         }
-
         // Main Menu clicks
         if(menuState == 0) {
             // Start Game
@@ -468,13 +708,13 @@ void iMouse(int button, int state, int mx, int my){
             else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 370 && my <= 370 + MENU_HEIGHT){
                 menuState = 2; // Go to Instructions screen
             }
-            // Exit Button
-            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 320 && my <= 320 + MENU_HEIGHT){
-                exit(0); // Exit game
+            // Leaderboard (moved from keyboard to mouse click)
+            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 320 && my <= 320 + MENU_HEIGHT) {
+                menuState = 5;
             }
-            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 270 && my <= 270 + MENU_HEIGHT)
-            {
-                menuState = 5; // rahul new
+            // Exit Button
+            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 270 && my <= 270 + MENU_HEIGHT){
+                exit(0); // Exit game
             }
         }
 
@@ -498,19 +738,8 @@ void iMouse(int button, int state, int mx, int my){
             }
 
             if(level >= 1 && level <= 3){
-                score = 0;
-                life = 3;
-                initBricks();
-                paddle_x = screenWidth / 2 - paddle_width / 2;
-                ball_x = paddle_x + paddle_width / 2;
-                ball_y = paddle_y + paddle_height;
-                dx = 6; dy = 8;
-                menuState = 1;
-                ballStuck = true;
-            }
-            if (level >= 1 && level <= 3) 
-            { //rahul new
-                askingName = true;
+                // Removed redundant game start logic here as it's handled after name input
+                askingName = true; // Ask for name before starting the game
                 nameIndex = 0;
                 playerName[0] = '\0';
                 return; // Wait for name input before starting game
@@ -520,8 +749,7 @@ void iMouse(int button, int state, int mx, int my){
 
     // ✅ Right click to pause/resume (anywhere)
     if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN){
-        if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN){
-        if (menuState == 1) {
+        if (menuState == 1) { // Only pause/resume if in game state
             if (!isPaused) {
                 iPauseTimer(0);
                 isPaused = true;
@@ -531,7 +759,6 @@ void iMouse(int button, int state, int mx, int my){
             }
         }
     }
-}
 }
 
 
@@ -578,38 +805,31 @@ void iKeyboard(unsigned char key, int state){
 
 
     if(menuState==0){
-        if(key=='1'){
-            life=3;
-            menuState=1;
-            paddle_x = screenWidth/2 - paddle_width/2;
-            ball_x = paddle_x + paddle_width/2;
-            ball_y = paddle_y + paddle_height;
-            //paddle_x= 350;//start Game
-            dx=6;
-            dy=8;
-            gameOverTimer=0;
-            initBricks();
-            ballStuck=true;
-        }
-        else if(key=='2'){
-            menuState=2;//Instructions
-        }
-        else if(key=='3'){
-        exit(0);//exit game
+        // Removed numeric keys 1, 2, 3 for menu navigation as it's now handled by mouse clicks.
+        // The old key '3' for exit is now associated with the mouse click for 'Leaderboard'.
+        // Exit is now bound to key '4' as per original menu.
+        if(key=='1' || key=='2' || key=='3' || key=='4') { // Prevent unintended actions for these keys if menu navigation is now mouse-driven
+             // No action if menu is mouse controlled.
         }
     }
         else if(menuState==2 && (key=='b'|| key=='B')){
             menuState = 0;//Go back to main menu
         }
         else if(menuState==1){
-            if(key== 'p' || key== 'P') iPauseTimer(0);
-            if(key== 'r' || key== 'R') iResumeTimer(0);
+            if(key== 'p' || key== 'P') {
+                iPauseTimer(0);
+                isPaused = true; // Update pause state
+            }
+            if(key== 'r' || key== 'R') {
+                iResumeTimer(0);
+                isPaused = false; // Update pause state
+            }
         }
-        else if(menuState == 5 && (key == 'b' || key == 'B')) // rahul new 
+        else if(menuState == 5 && (key == 'b' || key == 'B')) // rahul new
         {
             menuState = 0;
         }
-        
+
     }
 
 
@@ -628,19 +848,25 @@ void iSpecialKeyboard(unsigned char key,int state)
 }
 
 int main(int argc, char *argv[])
-{   
+{
     glutInit(&argc, argv);
     iInitializeSound();
-
+    iSetTimer(20, winCountdown); // Timer for win countdown
     iSetTimer(20, ballChange); // place your own initialization codes here.
     iSetTimer(20, gameOverCountdown);
+    iSetTimer(20, updateFallingPerks); // *** NEW: Timer for falling perks ***
     iLoadImage(&img,"life.png");
     iLoadImage(&scoreIcon,"score.png");
     iLoadImage(&paddleImage,"paddle_M1.bmp");
     iLoadImage(&LevelSelectBackground,"image.png");
     iLoadImage(&leaderboardImage, "leaderboard.jpg"); // rahul new
 
+    // *** NEW: Load Perk Images ***
+    iLoadImage(&perkImage_Life, "1.bmp"); // Assuming 1.bmp is the life perk image
+    iLoadImage(&perkImage_Speed, "3.bmp"); // Assuming 3.bmp is the speed perk image
+    iLoadImage(&perkImage_Trap, "13.bmp"); // Assuming 13.bmp is the trap perk image
+    iLoadImage(&levelupImage, "lvlup.bmp");
     //iLoadImage(&level1,"1.png");
     iOpenWindow(1000, 800, "DxBall");
     return 0;
-} 
+}
