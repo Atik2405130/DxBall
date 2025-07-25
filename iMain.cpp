@@ -270,7 +270,7 @@ void initBricks()
     // Clear any existing falling perks when starting a new level
     fallingPerks.clear();
 }
-/*
+
 void saveGameState() {
     FILE* fp = fopen("saved_game.txt", "w");
     if (fp) {
@@ -284,11 +284,11 @@ void saveGameState() {
         fclose(fp);
     }
 }
-    */
+    
 
 
 
-/*void loadGameState() {
+void loadGameState() {
     FILE* fp = fopen("saved_game.txt", "r");
     if (fp) {
         fscanf(fp, "%d %d %d %d %d %d %d %d %d", &level, &score, &life, &ball_x, &ball_y, &dx, &dy, &paddle_x, &ballStuck);
@@ -300,7 +300,7 @@ void saveGameState() {
         fclose(fp);
         menuState = 1;
     }
-}*/
+}
 
 
 
