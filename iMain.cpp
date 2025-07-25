@@ -5,6 +5,10 @@
 #include<cmath>
 #include<algorithm>
 
+char playerName[50] = ""; // rahul new
+int nameIndex = 0;
+bool askingName = false;
+
 
 bool isPaused = false;
 
@@ -35,6 +39,7 @@ int bricks[ROW][COLM];
 int brickstartx=60;
 int brickstarty=600;
 Image LevelSelectBackground;// Rahul is bad
+Image leaderboardImage; // rahul new
 int menuState=0; //0=Main Menu, 1=Game, 2=Instructions, 3=Game Over
 int gameOverTimer=0;
 Image paddleImage;
@@ -43,6 +48,23 @@ bool ballStuck=true;
 #define MENU_X 270
 #define MENU_WIDTH 300
 #define MENU_HEIGHT 50
+
+
+void drawNameInput()
+{ // rahul new
+    iSetColor(255, 255, 255);
+    iTextAdvanced(300, 400, "Enter Your Name:", 0.3, 2.5);
+
+    char displayName[100] = "Name: ";
+    strcat(displayName, playerName);
+
+    iSetColor(200, 200, 0);
+    iTextAdvanced(320, 350, displayName,0.3,2.5);
+
+    iSetColor(150, 150, 150);
+    iTextAdvanced(320, 300, "Press ENTER to continue",0.3,2.5);
+}
+
 
 
 
@@ -101,7 +123,12 @@ void Level3Bricks() {
 }
 
 
-
+void drawLeaderboard()
+{ // rahul new 
+    iShowLoadedImage(0, 0, &leaderboardImage);
+    iSetColor(255, 255, 255);
+    iTextAdvanced(350, 50, "Press 'B' to go back", 0.25, 2.0);
+}
 
 
  
@@ -216,6 +243,13 @@ void ballChange(){
             ball_x=screenWidth/2;
             ball_y=-1000;
             ballStuck=true;
+
+        FILE *fp = fopen("scores.txt", "a");
+        if (fp != NULL)
+        { // rahul new
+            fprintf(fp, "%s %d\n", playerName[0] ? playerName : "Anonymous", score);
+            fclose(fp);
+        }
         }
         else{
             paddle_x=screenWidth/2-paddle_width / 2;
@@ -285,7 +319,8 @@ void drawmenu(){
 
     iTextAdvanced(270, 420, "1. Start Game", 0.4, 2.5);
     iTextAdvanced(270, 370, "2. Instructions", 0.4, 2.5);
-    iTextAdvanced(270, 320, "3. Exit", 0.4, 2.5);
+    iTextAdvanced(270, 320, "3. Leaderboard", 0.4, 2.5); // rahul new
+    iTextAdvanced(270, 270, "4. Exit", 0.4, 2.5);
 }
 void drawInstructions(){
     iSetColor(255, 69, 0); //Orange Red
@@ -345,6 +380,13 @@ void iDraw()
 {
     // place your drawing codes here
     iClear();
+
+    if(askingName)
+    { // rahul new
+        drawNameInput();
+        return; // Don't draw menu or game yet
+    }
+
     if (menuState == 4) drawLevelSelectMenu();
     //show background image
     if(menuState==0){
@@ -371,6 +413,10 @@ void iDraw()
         iSetColor(255,0,0);
         iTextAdvanced(320,400,"Game Over!",0.4,4.0);
         iTextAdvanced(300,340,"Returning to Menu...",0.3,2.5);
+    }
+    else if(menuState == 5) // rahul new
+    {
+    drawLeaderboard();
     }
 }
 
@@ -426,6 +472,10 @@ void iMouse(int button, int state, int mx, int my){
             else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 320 && my <= 320 + MENU_HEIGHT){
                 exit(0); // Exit game
             }
+            else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 270 && my <= 270 + MENU_HEIGHT)
+            {
+                menuState = 5; // rahul new
+            }
         }
 
         // Level Select Menu clicks
@@ -457,6 +507,13 @@ void iMouse(int button, int state, int mx, int my){
                 dx = 6; dy = 8;
                 menuState = 1;
                 ballStuck = true;
+            }
+            if (level >= 1 && level <= 3) 
+            { //rahul new
+                askingName = true;
+                nameIndex = 0;
+                playerName[0] = '\0';
+                return; // Wait for name input before starting game
             }
         }
     }
@@ -492,6 +549,34 @@ function iKeyboard() is called whenever the user hits a key in keyboard.
 key- holds the ASCII value of the key pressed.
 */
 void iKeyboard(unsigned char key, int state){
+        if (askingName) { // rahul new
+        if (key == '\r') { // ENTER key
+            askingName = false;
+            // Go to game
+            score = 0;
+            life = 3;
+            initBricks();
+            paddle_x = screenWidth / 2 - paddle_width / 2;
+            ball_x = paddle_x + paddle_width / 2;
+            ball_y = paddle_y + paddle_height;
+            dx = 6; dy = 8;
+            menuState = 1;
+            ballStuck = true;
+        }
+        else if (key == '\b') { // BACKSPACE
+            if (nameIndex > 0) {
+                nameIndex--;
+                playerName[nameIndex] = '\0';
+            }
+        }
+        else if (nameIndex < 49 && key >= 32 && key <= 126) { // visible characters
+            playerName[nameIndex++] = key;
+            playerName[nameIndex] = '\0';
+        }
+        return;
+    }
+
+
     if(menuState==0){
         if(key=='1'){
             life=3;
@@ -520,7 +605,10 @@ void iKeyboard(unsigned char key, int state){
             if(key== 'p' || key== 'P') iPauseTimer(0);
             if(key== 'r' || key== 'R') iResumeTimer(0);
         }
-        
+        else if(menuState == 5 && (key == 'b' || key == 'B')) // rahul new 
+        {
+            menuState = 0;
+        }
         
     }
 
@@ -550,6 +638,8 @@ int main(int argc, char *argv[])
     iLoadImage(&scoreIcon,"score.png");
     iLoadImage(&paddleImage,"paddle_M1.bmp");
     iLoadImage(&LevelSelectBackground,"image.png");
+    iLoadImage(&leaderboardImage, "leaderboard.jpg"); // rahul new
+
     //iLoadImage(&level1,"1.png");
     iOpenWindow(1000, 800, "DxBall");
     return 0;
