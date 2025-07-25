@@ -9,11 +9,11 @@
 char playerName[50] = ""; // rahul new
 int nameIndex = 0;
 bool askingName = false;
-<<<<<<< HEAD
+
 #define MENU_CONTINUE 7
-=======
+
 Image menuBackground;
->>>>>>> d5dc0bbe88a52c44ba9802dcf3704a5042f2c300
+
 bool isPaused = false;
 int winTimer = 0;
 // Atik is dead
@@ -600,18 +600,14 @@ void drawmenu(){
     //iSetColor(255, 69, 0); // Orange Red
     //iTextAdvanced(270, 520, "MENU", 0.5, 3.5); // Title
 
-<<<<<<< HEAD
-    iTextAdvanced(270, 420, "1. Start Game", 0.4, 2.5);
-    iTextAdvanced(270, 370, "2. Instructions", 0.4, 2.5);
-    iTextAdvanced(270, 320, "3. Leaderboard", 0.4, 2.5); // rahul new
-    iTextAdvanced(270, 270, "4. Exit", 0.4, 2.5);
-    iTextAdvanced(270, 220, "5. Continue", 0.4, 2.5);
-=======
+
+    
+
     //iTextAdvanced(270, 420, "1. Start Game", 0.4, 2.5);
     //iTextAdvanced(270, 370, "2. Instructions", 0.4, 2.5);
     //iTextAdvanced(270, 320, "3. Leaderboard", 0.4, 2.5); // rahul new
     //iTextAdvanced(270, 270, "4. Exit", 0.4, 2.5);
->>>>>>> d5dc0bbe88a52c44ba9802dcf3704a5042f2c300
+
 }
 void drawInstructions(){
     iSetColor(255, 69, 0); //Orange Red
@@ -818,19 +814,11 @@ void iMouse(int button, int state, int mx, int my){
             else if (mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 100 && my <=150){
                 exit(0); // Exit game
             }
-<<<<<<< HEAD
-            else if(mx >= MENU_X && mx <= MENU_X + MENU_WIDTH && my >= 220 && my <= 270){
-                loadGameState();
-                menuState = 1; // Go to game
-            }
-
-=======
             else if(mx>=MENU_X && mx<=MENU_X+MENU_WIDTH && my>=200 && my<=250){
                 //Credits
                 menuState = 10; // Show credits screen
                 iShowLoadedImage(0, 0, &creditsImage);
             }
->>>>>>> d5dc0bbe88a52c44ba9802dcf3704a5042f2c300
         }
 
         // Level Select Menu clicks
@@ -860,31 +848,17 @@ void iMouse(int button, int state, int mx, int my){
                 return; // Wait for name input before starting game
             }
         }
-        if (menuState == MENU_CONTINUE && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-    // Continue
-    if(mx >= 350 && mx <= 650 && my >= 340 && my <= 390) {
-        iResumeTimer(0);
-        isPaused = false;
-        menuState = 1;
-    }
-    // Exit
-    else if(mx >= 350 && mx <= 650 && my >= 290 && my <= 340) {
-        saveGameState(); // Save paused game
-        menuState = 0;   // Back to main menu
-        isPaused = false;
-    }
-}
-
-
     }
 
     // ✅ Right click to pause/resume (anywhere)
     if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN){
-        if (menuState == 1){ // Game state
+        if (menuState == 1) { // Only pause/resume if in game state
             if (!isPaused) {
                 iPauseTimer(0);
                 isPaused = true;
-                menuState = MENU_CONTINUE; // Go to pause menu
+            } else {
+                iResumeTimer(0);
+                isPaused = false;
             }
         }
     }
