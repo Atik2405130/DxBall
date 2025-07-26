@@ -348,7 +348,7 @@ bool isLevelCleared() {
 // MARK: ballChange() -- Modified for Perk Spawning
 void ballChange(){
     if(menuState!=1 || isPaused) return; // Add pause check here
-    remove("saved_game.txt");
+    //remove("saved_game.txt");
     if (ballStuck) {
         ball_x=paddle_x+paddle_width/2;
         ball_y=paddle_y+paddle_height+ball_radius;
@@ -602,6 +602,8 @@ void updateFallingPerks() {
 }
 
 void drawmenu(){
+    iSetColor(255, 255, 255);
+    iTextAdvanced(MENU_X + 20, 570, "Continue Game", 0.35, 2.5); // New line
     iShowLoadedImage(0,0,&menuBackground);
     //iSetColor(255, 69, 0); // Orange Red
     //iTextAdvanced(270, 520, "MENU", 0.5, 3.5); // Title
@@ -815,6 +817,7 @@ function iMouse() is called when the user presses/releases the mouse.
 (mx, my) is the position where the mouse pointer is.
 */
 void iMouse(int button, int state, int mx, int my){
+    //printf("Mouse clicked at (%d, %d)\n", mx, my);
 
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN){
         if (menuState == 6) {
@@ -848,6 +851,14 @@ void iMouse(int button, int state, int mx, int my){
                 //Credits
                 menuState = 10; // Show credits screen
                 iShowLoadedImage(0, 0, &creditsImage);
+            }
+            //Continue
+            else if(mx>=407 && mx<=595 && my>=553 &&my<=620){
+                FILE *fp = fopen("saved_game.txt", "r");
+                if (fp != NULL) {
+                    fclose(fp); // File exists
+                    loadGameState(); // Load and go to game
+                }
             }
         }
 
@@ -888,21 +899,14 @@ void iMouse(int button, int state, int mx, int my){
             }
             // Check Exit to Menu button click
             else if (mx >= PAUSE_BUTTON_X && mx <= PAUSE_BUTTON_X + PAUSE_BUTTON_WIDTH &&
-                     my >= EXIT_BUTTON_Y && my <= EXIT_BUTTON_Y + PAUSE_BUTTON_HEIGHT) {
-                menuState = 0; // Go back to main menu
-                iPauseTimer(0); // Stop game timer
-                isPaused = false; // Ensure unpaused
-                // Reset game state for a fresh start when returning to menu
-                life = 3;
-                score = 0;
-                level = 1;
-                ball_x = screenWidth / 2;
-                ball_y = paddle_y + paddle_height + ball_radius;
-                dx = 6; dy = 8;
-                ballStuck = true;
-                fallingPerks.clear(); // Clear any falling perks
-                initBricks(); // Re-initialize bricks for level 1
+                my >= EXIT_BUTTON_Y && my <= EXIT_BUTTON_Y + PAUSE_BUTTON_HEIGHT) {
+                saveGameState(); // <-- Add this line
+                menuState = 0;
+                iPauseTimer(0);
+                isPaused = false;
+    // Reset game state...
             }
+
         }
     }
 
