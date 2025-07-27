@@ -753,7 +753,7 @@ void iDraw()
     else if(menuState == MENU_WIN) {
     iSetColor(0, 255, 0);
     iTextAdvanced(300, 400, "🎉 Congratulations!", 0.5, 4.0);
-    iTextAdvanced(250, 330, "You have completed all levels!", 0.4, 3.0);
+    iTextAdvanced(150, 330, "You have completed all levels!", 0.4, 3.0);
     iTextAdvanced(250, 260, "Returning to Main Menu...", 0.3, 2.5);
 }
 
