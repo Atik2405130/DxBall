@@ -57,7 +57,6 @@ bool ballStuck=true;
 #define MENU_HEIGHT 50
 #define MENU_WIN 8
 
-// *** NEW: Perk Definitions ***
 #define BRICK_TYPE_NORMAL_1HIT 1 // Green
 #define BRICK_TYPE_NORMAL_2HIT 2 // Red
 #define BRICK_TYPE_NORMAL_3HIT 3 // Purple
@@ -89,7 +88,6 @@ struct FallingPerk {
 
 std::vector<FallingPerk> fallingPerks; // Vector to store active falling perks
 
-// *** NEW: Perk Images ***
 Image perkImage_Life;
 Image perkImage_Speed;
 Image perkImage_Trap;
@@ -367,17 +365,17 @@ void ballChange(){
     if(ball_x + ball_radius > screenWidth) {
         ball_x = screenWidth - ball_radius;
         dx = -dx;
-        iPlaySound("Wall.wav",false,10);
+        iPlaySound("Wall.wav",false,50);
     } else if (ball_x - ball_radius < 0) {
         ball_x = ball_radius;
         dx = -dx;
-        iPlaySound("Wall.wav",false,10);
+        iPlaySound("Wall.wav",false,50);
     }
 
     if(ball_y + ball_radius > screenHeight){
         ball_y=screenHeight-ball_radius;
         dy = -dy;
-        iPlaySound("Wall.wav",false,10);
+        iPlaySound("Wall.wav",false,50);
     }
 
     // Paddle collision
@@ -391,12 +389,12 @@ void ballChange(){
         else dx = 8;//right quarter
 
         ball_y=paddle_y+paddle_height+ball_radius;// Prevent sticking
-        iPlaySound("Boing.wav",false,10);
+        iPlaySound("Boing.wav",false,50);
     }
 
     // Missed ball
     if(ball_y - ball_radius < 0){
-        iPlaySound("Fall.wav",false,10);
+        iPlaySound("Fall.wav",false,50);
         life--;
         if(life<=0){
             menuState=3;
